@@ -1,4 +1,13 @@
 <script setup>
+import FileUploadTest from '~/components/debug/FileUploadTest.vue'
+import SupabaseConnectionTest from '~/components/debug/SupabaseConnectionTest.vue'
+import DirectFileUploadTest from '~/components/debug/DirectFileUploadTest.vue'
+import BucketCreator from '~/components/debug/BucketCreator.vue'
+import SqlExecutor from '~/components/debug/SqlExecutor.vue'
+import ServiceRoleTest from '~/components/debug/ServiceRoleTest.vue'
+import SimpleUploader from '~/components/debug/SimpleUploader.vue'
+import ServerUploader from '~/components/debug/ServerUploader.vue'
+
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const { profile, fetchProfile, updateProfile } = useUserProfile()
@@ -8,6 +17,12 @@ const loading = ref(false)
 const error = ref(null)
 const rawProfile = ref(null)
 const diagnosisMessage = ref('')
+
+// For SimpleUploader
+const filePath = ref('')
+const handleFileUploaded = () => {
+  console.log('File uploaded successfully, path:', filePath.value)
+}
 
 // Force profile refresh
 const refreshProfile = async () => {
@@ -89,119 +104,54 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-8">
-    <div class="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
-      <h1 class="text-2xl font-bold mb-6">Profile Debug Page</h1>
+  <div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4">
+    <div class="max-w-5xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-8">Debug Tools</h1>
       
-      <div v-if="!user" class="p-4 bg-yellow-100 rounded-md text-yellow-800">
-        Not logged in. Please <NuxtLink to="/login" class="text-blue-600 underline">log in</NuxtLink> first.
-      </div>
-      
-      <template v-else>
-        <div class="space-y-6">
-          <!-- User Information -->
-          <div class="border rounded-md p-4">
-            <h2 class="text-lg font-semibold mb-2">User Information</h2>
-            <div class="grid grid-cols-2 gap-2">
-              <div class="text-sm font-medium">User ID:</div>
-              <div class="text-sm">{{ user.id }}</div>
-              
-              <div class="text-sm font-medium">Email:</div>
-              <div class="text-sm">{{ user.email }}</div>
-            </div>
-          </div>
-          
-          <!-- Profile Information -->
-          <div class="border rounded-md p-4">
-            <h2 class="text-lg font-semibold mb-2">Profile Information</h2>
-            
-            <div v-if="profile" class="bg-green-50 p-3 rounded-md mb-4">
-              <p class="text-green-800 text-sm">Profile loaded in application state!</p>
-            </div>
-            <div v-else class="bg-red-50 p-3 rounded-md mb-4">
-              <p class="text-red-800 text-sm">No profile in application state</p>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-2">
-              <div class="text-sm font-medium">Name:</div>
-              <div class="text-sm">{{ profile?.name || 'Not set' }}</div>
-              
-              <div class="text-sm font-medium">Team:</div>
-              <div class="text-sm">
-                <span 
-                  v-if="profile?.team_id" 
-                  class="px-2 py-1 rounded-full text-white text-xs"
-                  :class="teamColors.find(t => t.id === profile.team_id)?.color"
-                >
-                  {{ teamColors.find(t => t.id === profile.team_id)?.name || profile.team_id }}
-                </span>
-                <span v-else>Not set</span>
-              </div>
-              
-              <div class="text-sm font-medium">Is Admin:</div>
-              <div class="text-sm">{{ profile?.is_admin ? 'Yes' : 'No' }}</div>
-            </div>
-          </div>
-          
-          <!-- Raw Profile Data -->
-          <div class="border rounded-md p-4">
-            <h2 class="text-lg font-semibold mb-2">Raw Database Profile</h2>
-            
-            <div v-if="rawProfile" class="bg-green-50 p-3 rounded-md mb-4">
-              <p class="text-green-800 text-sm">Profile exists in the database!</p>
-            </div>
-            <div v-else class="bg-red-50 p-3 rounded-md mb-4">
-              <p class="text-red-800 text-sm">No profile found in the database</p>
-            </div>
-            
-            <pre v-if="rawProfile" class="bg-gray-100 p-3 rounded-md text-xs overflow-auto">{{ JSON.stringify(rawProfile, null, 2) }}</pre>
-            <p v-else class="text-gray-500 text-sm">No raw profile data available.</p>
-          </div>
-          
-          <!-- Diagnosis -->
-          <div class="border rounded-md p-4">
-            <h2 class="text-lg font-semibold mb-2">Diagnosis</h2>
-            <p class="text-sm" :class="{'text-red-600': error, 'text-blue-600': !error && diagnosisMessage}">
-              {{ diagnosisMessage || 'No diagnosis available.' }}
-            </p>
-            <p v-if="error" class="text-sm text-red-600 mt-2">Error: {{ error }}</p>
-          </div>
-          
-          <!-- Actions -->
-          <div class="flex flex-wrap gap-3">
-            <button 
-              @click="refreshProfile"
-              class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              :disabled="loading"
-            >
-              Refresh Profile
-            </button>
-            
-            <button 
-              @click="getRawProfile"
-              class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
-              :disabled="loading"
-            >
-              Get Raw Profile
-            </button>
-            
-            <button 
-              @click="fixProfile"
-              class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
-              :disabled="loading"
-            >
-              Fix Missing Profile
-            </button>
-            
-            <NuxtLink 
-              to="/profile-setup"
-              class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              Go to Profile Setup
-            </NuxtLink>
-          </div>
+      <div class="space-y-8">
+        <!-- Supabase Connection Test -->
+        <div class="mb-8">
+          <SupabaseConnectionTest />
         </div>
-      </template>
+        
+        <!-- Server Uploader (Recommended) -->
+        <div class="mb-8">
+          <ServerUploader />
+        </div>
+        
+        <!-- Simple Uploader -->
+        <div class="mb-8">
+          <SimpleUploader 
+            v-model:path="filePath" 
+            @upload="handleFileUploaded"
+          />
+        </div>
+        
+        <!-- Service Role Test -->
+        <div class="mb-8">
+          <ServiceRoleTest />
+        </div>
+        
+        <!-- SQL Executor -->
+        <div class="mb-8">
+          <SqlExecutor />
+        </div>
+        
+        <!-- Bucket Creator -->
+        <div class="mb-8">
+          <BucketCreator />
+        </div>
+        
+        <!-- Direct File Upload Test -->
+        <div class="mb-8">
+          <DirectFileUploadTest />
+        </div>
+        
+        <!-- File Upload Test -->
+        <div>
+          <FileUploadTest />
+        </div>
+      </div>
     </div>
   </div>
 </template> 

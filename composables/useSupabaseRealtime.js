@@ -226,15 +226,23 @@ export const useSupabaseRealtime = () => {
   }
 
   // Send a message to the global chat
-  const sendMessage = async (message, userName, teamId) => {
-    if (!message || !userName || !teamId) return
+  const sendMessage = async (message, userName, teamId, fileAttachment = null) => {
+    if ((!message && !fileAttachment) || !userName || !teamId) return
     
     try {
       const newMessage = {
-        text: message,
+        text: message || '',
         user_name: userName,
         team_id: teamId,
         created_at: new Date().toISOString()
+      }
+      
+      // Add file attachment data if provided
+      if (fileAttachment) {
+        newMessage.file_url = fileAttachment.fileUrl
+        newMessage.file_type = fileAttachment.fileType
+        newMessage.file_name = fileAttachment.fileName
+        newMessage.file_size = fileAttachment.fileSize
       }
       
       // Optimistically add message to local state immediately
@@ -248,13 +256,16 @@ export const useSupabaseRealtime = () => {
       if (error) throw error
       
       // Broadcast to realtime channel
-      currentChannel.value.send({
+      await currentChannel.value.send({
         type: 'broadcast',
         event: 'chat-message',
         payload: newMessage
       })
+      
+      return true
     } catch (error) {
       console.error('Error sending message:', error)
+      return false
     }
   }
 

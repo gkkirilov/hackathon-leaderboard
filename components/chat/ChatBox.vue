@@ -1,5 +1,7 @@
 <script setup>
 import AIControlPanel from '~/components/chat/AIControlPanel.vue'
+import FileAttachment from '~/components/chat/FileAttachment.vue'
+import FileUploader from '~/components/chat/FileUploader.vue'
 
 const { teamColors, getTeamColor } = useTeams()
 const { 
@@ -14,6 +16,7 @@ const {
 } = useSupabaseRealtime()
 const { profile, fetchProfile } = useUserProfile()
 const { checkForQuestions } = useLocalAI()
+const { uploadFile, isUploading, uploadProgress, uploadError } = useFileUpload()
 const user = useSupabaseUser()
 
 const chatMessage = ref('')
@@ -28,6 +31,11 @@ const isSoundMuted = ref(false)
 const isSoundLoaded = ref(false)
 const soundLoadError = ref(null)
 const isNearTop = ref(false)
+const fileInputRef = ref(null)
+const selectedFile = ref(null)
+const filePreview = ref(null)
+const isServerUploading = ref(false)
+const serverUploadError = ref(null)
 
 // Initialize chat on component mount and fetch profile if needed
 onMounted(async () => {
@@ -252,16 +260,55 @@ const handleLoadMore = async () => {
   });
 }
 
-// Send message function
-const handleSendMessage = () => {
-  if (!chatMessage.value.trim() || !profile.value?.name || !profile.value?.team_id) return
+// Handle file selection
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
   
-  // Create the message object
+  selectedFile.value = file
+  
+  // Create a preview for images
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      filePreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  } else {
+    filePreview.value = null
+  }
+}
+
+// Clear selected file
+const clearSelectedFile = () => {
+  selectedFile.value = null
+  filePreview.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+// Trigger file input click
+const openFileSelector = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+// Handle file upload complete
+const handleUploadComplete = (fileData) => {
+  console.log('File upload completed:', fileData)
+  
+  // Create the message object with file attachment
   const newMessage = {
     text: chatMessage.value.trim(),
     user_name: profile.value.name,
     team_id: profile.value.team_id,
     created_at: new Date().toISOString(),
+    file_url: fileData.fileUrl,
+    file_type: fileData.fileType,
+    file_name: fileData.fileName,
+    file_size: fileData.fileSize,
     // Add a temporary ID to identify this message locally
     _tempId: Date.now() + Math.random().toString(36).substring(2, 9)
   }
@@ -281,11 +328,144 @@ const handleSendMessage = () => {
   chatMessage.value = ''
   
   // Send through Supabase
-  sendMessage(
-    newMessage.text,
-    newMessage.user_name,
-    newMessage.team_id
-  )
+  try {
+    const result = sendMessage(
+      newMessage.text,
+      newMessage.user_name,
+      newMessage.team_id,
+      {
+        fileUrl: fileData.fileUrl,
+        fileType: fileData.fileType,
+        fileName: fileData.fileName,
+        fileSize: fileData.fileSize
+      }
+    )
+    
+    if (!result) {
+      console.error('Failed to send message through Supabase')
+    }
+  } catch (error) {
+    console.error('Error sending message:', error)
+  }
+}
+
+// Handle file upload error
+const handleUploadError = (errorMessage) => {
+  console.error('File upload error:', errorMessage)
+  uploadError.value = errorMessage
+}
+
+// Send message function with file attachment support
+const handleSendMessage = async () => {
+  if ((!chatMessage.value.trim() && !selectedFile.value) || !profile.value?.name || !profile.value?.team_id) return
+  
+  let fileAttachment = null
+  
+  // Upload file if selected
+  if (selectedFile.value) {
+    try {
+      console.log('Starting file upload for:', selectedFile.value.name)
+      
+      // Use server-side API for file upload
+      isServerUploading.value = true
+      serverUploadError.value = null
+      
+      // Create form data for the API request
+      const formData = new FormData()
+      formData.append('file', selectedFile.value)
+      formData.append('bucketName', 'chat-files')
+      
+      // Send request to server-side API
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Upload failed')
+      }
+      
+      console.log('File uploaded successfully via server API:', result)
+      
+      // Format the file attachment data
+      fileAttachment = {
+        fileUrl: result.body.fileUrl,
+        fileType: selectedFile.value.type,
+        fileName: selectedFile.value.name,
+        fileSize: selectedFile.value.size
+      }
+      
+    } catch (error) {
+      console.error('Error during server file upload:', error)
+      serverUploadError.value = error.message || 'File upload failed'
+      
+      // Show error but allow sending the text message part
+      if (!chatMessage.value.trim()) {
+        isServerUploading.value = false
+        return // Don't proceed if there's no text message and file upload failed
+      }
+    } finally {
+      isServerUploading.value = false
+    }
+  }
+  
+  // Create the message object
+  const newMessage = {
+    text: chatMessage.value.trim(),
+    user_name: profile.value.name,
+    team_id: profile.value.team_id,
+    created_at: new Date().toISOString(),
+    // Add a temporary ID to identify this message locally
+    _tempId: Date.now() + Math.random().toString(36).substring(2, 9)
+  }
+  
+  // Add file attachment data if available
+  if (fileAttachment) {
+    newMessage.file_url = fileAttachment.fileUrl
+    newMessage.file_type = fileAttachment.fileType
+    newMessage.file_name = fileAttachment.fileName
+    newMessage.file_size = fileAttachment.fileSize
+    
+    console.log('Adding file attachment to message:', {
+      url: fileAttachment.fileUrl,
+      type: fileAttachment.fileType,
+      name: fileAttachment.fileName,
+      size: fileAttachment.fileSize
+    })
+  }
+  
+  // Add to local messages first for immediate display
+  localMessages.value.push(newMessage)
+  
+  // Scroll to top to see new message since messages are sorted newest first
+  nextTick(() => {
+    if (chatContainer.value) {
+      console.log('[ChatBox] Scrolling to top after sending message')
+      chatContainer.value.scrollTop = 0
+    }
+  })
+  
+  // Clear input and selected file
+  chatMessage.value = ''
+  clearSelectedFile()
+  
+  // Send through Supabase
+  try {
+    const result = await sendMessage(
+      newMessage.text,
+      newMessage.user_name,
+      newMessage.team_id,
+      fileAttachment
+    )
+    
+    if (!result) {
+      console.error('Failed to send message through Supabase')
+    }
+  } catch (error) {
+    console.error('Error sending message:', error)
+  }
 }
 
 // Check if user is near the bottom of the message container (for auto-loading more messages)
@@ -424,37 +604,81 @@ const handleTouchMove = (event) => {
     
     <!-- Chat Input (Moved to top) -->
     <div class="p-3 border-b border-green-900/30 bg-black/40 backdrop-blur-sm">
-      <form @submit.prevent="handleSendMessage" class="flex gap-2">
-        <input
-          v-model="chatMessage"
-          type="text"
-          placeholder="Type your message..."
-          class="flex-1 px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
-          :disabled="!profile?.name"
+      <form @submit.prevent="handleSendMessage" class="flex flex-col gap-2">
+        <!-- File Uploader Component -->
+        <FileUploader 
+          v-if="profile?.name"
+          @upload-complete="handleUploadComplete"
+          @upload-error="handleUploadError"
         />
         
-        <!-- AI Assistant Button -->
-        <button
-          type="button"
-          @click="$refs.aiControlPanel?.togglePanel()"
-          class="p-2 bg-gray-900/80 hover:bg-gray-800 text-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 backdrop-blur-sm transition-colors flex items-center justify-center relative"
-          :class="{ 'bg-green-900/70 text-green-300': $refs.aiControlPanel?.localAIActive }"
-          title="AI Assistant Settings"
-        >
-          <Icon :name="$refs.aiControlPanel?.localAIActive ? 'lucide:bot' : 'lucide:bot-offline'" class="h-5 w-5" />
-          <span v-if="$refs.aiControlPanel?.localAIActive" class="absolute -top-1 -right-1 flex h-3 w-3">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-          </span>
-        </button>
+        <!-- Error Message -->
+        <div v-if="uploadError || serverUploadError" class="bg-red-900/20 rounded-lg p-2 border border-red-900/30 text-red-400 text-sm">
+          <Icon name="lucide:alert-circle" class="h-4 w-4 inline-block mr-1" />
+          {{ uploadError || serverUploadError }}
+        </div>
         
-        <button
-          type="submit"
-          class="px-4 py-2 bg-green-900/80 hover:bg-green-800 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:bg-gray-800/50 backdrop-blur-sm transition-colors flex items-center justify-center"
-          :disabled="!chatMessage.trim() || !profile?.name"
-        >
-          <Icon name="lucide:send" class="h-5 w-5" />
-        </button>
+        <!-- File Selection UI -->
+        <div v-if="selectedFile" class="bg-gray-800/50 rounded-lg p-2 border border-green-900/30 flex items-center justify-between">
+          <div class="flex items-center">
+            <Icon 
+              :name="selectedFile.type.startsWith('image/') ? 'lucide:image' : 'lucide:file'" 
+              class="h-4 w-4 text-green-400 mr-2" 
+            />
+            <span class="text-sm text-gray-300 truncate max-w-[200px]">{{ selectedFile.name }}</span>
+          </div>
+          <button 
+            type="button" 
+            @click="clearSelectedFile" 
+            class="text-gray-500 hover:text-gray-300"
+          >
+            <Icon name="lucide:x" class="h-4 w-4" />
+          </button>
+        </div>
+        
+        <div class="flex gap-2">
+          <input
+            v-model="chatMessage"
+            type="text"
+            placeholder="Type your message..."
+            class="flex-1 px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
+            :disabled="!profile?.name || isUploading || isServerUploading"
+          />
+          <!-- Hidden file input -->
+          <input
+            ref="fileInputRef"
+            type="file"
+            class="hidden"
+            @change="handleFileSelect"
+            accept="image/*,.pdf,.doc,.docx,.txt"
+          />
+          
+          <!-- AI Assistant Button -->
+          <button
+            type="button"
+            @click="$refs.aiControlPanel?.togglePanel()"
+            class="p-2 bg-gray-900/80 hover:bg-gray-800 text-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 backdrop-blur-sm transition-colors flex items-center justify-center relative"
+            :class="{ 'bg-green-900/70 text-green-300': $refs.aiControlPanel?.localAIActive }"
+            title="AI Assistant Settings"
+          >
+            <Icon :name="$refs.aiControlPanel?.localAIActive ? 'lucide:bot' : 'lucide:bot-offline'" class="h-5 w-5" />
+            <span v-if="$refs.aiControlPanel?.localAIActive" class="absolute -top-1 -right-1 flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+          </button>
+          
+          <button
+            type="submit"
+            class="px-4 py-2 bg-green-900/80 hover:bg-green-800 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:bg-gray-800/50 backdrop-blur-sm transition-colors flex items-center justify-center"
+            :disabled="(!chatMessage.trim() && !selectedFile) || !profile?.name || isUploading || isServerUploading"
+          >
+            <span v-if="isServerUploading" class="flex items-center">
+              <span class="h-3 w-3 mr-2 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></span>
+            </span>
+            <Icon name="lucide:send" class="h-5 w-5" />
+          </button>
+        </div>
       </form>
       <div v-if="!profile?.name" class="mt-2">
         <p class="text-xs text-orange-400">
@@ -515,7 +739,19 @@ const handleTouchMove = (event) => {
                 {{ formatMessageTime(message.created_at) }}
               </span>
             </div>
-            <p class="text-sm text-gray-300 mt-1">{{ message.text }}</p>
+            
+            <!-- Message Text -->
+            <p v-if="message.text" class="text-sm text-gray-300 mt-1">{{ message.text }}</p>
+            
+            <!-- File Attachment -->
+            <div v-if="message.file_url" class="mt-2">
+              <FileAttachment 
+                :fileUrl="message.file_url"
+                :fileType="message.file_type"
+                :fileName="message.file_name"
+                :fileSize="message.file_size"
+              />
+            </div>
           </div>
         </div>
         

@@ -42,6 +42,7 @@ export default defineNuxtConfig({
   supabase: {
     url: 'https://vxtftprybsmtupbgtdau.supabase.co',
     key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4dGZ0cHJ5YnNtdHVwYmd0ZGF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIxMTA4NDgsImV4cCI6MjA1NzY4Njg0OH0.G-mPgbmWijHEvM-f34oHr_dMD-y4XUaspx7fxM6g5MM',
+    serviceKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4dGZ0cHJ5YnNtdHVwYmd0ZGF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MjExMDg0OCwiZXhwIjoyMDU3Njg2ODQ4fQ.t826O26GVewDcfuf5WniyBqlToZFXYMY7uOUjnkTLI8",
     redirect: true,
     redirectOptions: {
       login: '/login',
