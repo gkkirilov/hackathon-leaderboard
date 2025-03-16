@@ -113,10 +113,10 @@ const handleSendMessage = () => {
         <h3 class="font-bold text-sm text-green-400">GLOBAL CHAT</h3>
       </div>
       <div class="flex items-center">
-        <span v-if="participantsCount > 0" class="text-xs text-gray-500 font-mono mr-2">
+        <span class="text-xs text-gray-500 font-mono mr-2">
           {{ participantsCount }} ONLINE
         </span>
-        <div v-if="roomParticipants.length > 0" class="flex -space-x-1">
+        <div class="flex -space-x-1">
           <div 
             v-for="(participant, index) in roomParticipants.slice(0, 3)" 
             :key="participant.id"

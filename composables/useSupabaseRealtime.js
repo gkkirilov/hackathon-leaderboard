@@ -1,3 +1,8 @@
+import { ref, watch, onUnmounted } from 'vue'
+import { useSupabaseClient } from '#imports'
+import { useUserProfile } from './useUserProfile'
+import { useSupabaseUser } from '#imports'
+
 export const useSupabaseRealtime = () => {
   const supabase = useSupabaseClient()
   const messages = ref([])
@@ -18,6 +23,85 @@ export const useSupabaseRealtime = () => {
     messagesLoading.value = true
     currentPage.value = 1
     
+    // Reset participants when initializing 
+    roomParticipants.value = []
+    participantsCount.value = 0
+
+    // Create channel first without subscribing
+    currentChannel.value = supabase.channel('global-chat')
+    
+    // Set up message broadcasting
+    currentChannel.value.on('broadcast', { event: 'chat-message' }, (data) => {
+      // Extract the actual message data from the nested payload property
+      const messageData = data.payload || {};
+      
+      // Ensure the message has required properties
+      if (messageData && typeof messageData === 'object' && 
+          messageData.text && messageData.user_name && messageData.team_id) {
+        
+        // Ensure the message has a valid timestamp
+        if (!messageData.created_at) {
+          messageData.created_at = new Date().toISOString();
+        }
+        
+        // Add the message to the messages array
+        messages.value.push(messageData);
+      } else {
+        console.error('Received invalid broadcast message format:', data);
+      }
+    })
+    
+    // Set up presence tracking
+    currentChannel.value
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        console.log('New presences joined:', newPresences);
+        
+        // Update participants when someone joins
+        const updated = [...roomParticipants.value];
+        newPresences.forEach(presence => {
+          // Check if this presence already exists
+          const existingIndex = updated.findIndex(p => p.id === presence.id);
+          if (existingIndex >= 0) {
+            // Update existing presence
+            updated[existingIndex] = presence;
+          } else {
+            // Add new presence
+            updated.push(presence);
+          }
+        });
+        
+        roomParticipants.value = updated;
+        participantsCount.value = updated.length;
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        console.log('Presences left:', leftPresences);
+        
+        // Remove participants when they leave
+        if (leftPresences.length > 0) {
+          const leftIds = leftPresences.map(p => p.id);
+          roomParticipants.value = roomParticipants.value.filter(p => !leftIds.includes(p.id));
+          participantsCount.value = roomParticipants.value.length;
+        }
+      })
+      .on('presence', { event: 'sync' }, () => {
+        // Get the full, current presence state
+        const presenceState = currentChannel.value.presenceState();
+        console.log('Presence sync state:', presenceState);
+        
+        // Convert the state object to a flat array of participants
+        const allPresences = [];
+        Object.keys(presenceState).forEach(key => {
+          const usersPresences = presenceState[key];
+          if (Array.isArray(usersPresences)) {
+            allPresences.push(...usersPresences);
+          }
+        });
+        
+        console.log('All presences after sync:', allPresences);
+        roomParticipants.value = allPresences;
+        participantsCount.value = allPresences.length;
+      });
+    
     // Load existing messages
     try {
       const { data, error } = await supabase
@@ -37,78 +121,61 @@ export const useSupabaseRealtime = () => {
       messagesLoading.value = false
     }
 
-    // Subscribe to new messages and presence
-    currentChannel.value = supabase
-      .channel('global-chat')
-      .on('broadcast', { event: 'chat-message' }, (data) => {
-        // The payload structure is different than expected
-        // Instead of receiving the message directly, we get {event, payload, type}
-        // Extract the actual message data from the nested payload property
-        const messageData = data.payload || {};
+    // Now subscribe to the channel and track presence
+    try {
+      // First subscribe to the channel
+      const status = await currentChannel.value.subscribe();
+      console.log('Channel subscription status:', status);
+      
+      if (status === 'SUBSCRIBED') {
+        // Get user and profile data
+        const user = useSupabaseUser();
+        const { profile } = useUserProfile();
         
-        // Ensure the message has required properties
-        if (messageData && typeof messageData === 'object' && 
-            messageData.text && messageData.user_name && messageData.team_id) {
+        // Only track presence if we have both user and profile
+        if (user.value && profile.value && profile.value.name && profile.value.team_id) {
+          console.log('Tracking user presence for', user.value.id, profile.value.name);
           
-          // Ensure the message has a valid timestamp
-          if (!messageData.created_at) {
-            messageData.created_at = new Date().toISOString();
-          }
-          
-          // Add the message to the messages array
-          messages.value.push(messageData);
-        } else {
-          console.error('Received invalid broadcast message format:', data);
-        }
-      })
-      // Track presence of users in the room
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        console.log('New presences:', newPresences);
-        roomParticipants.value = [...roomParticipants.value, ...newPresences];
-        participantsCount.value = roomParticipants.value.length;
-      })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        console.log('Left presences:', leftPresences);
-        const leftIds = leftPresences.map(p => p.id);
-        roomParticipants.value = roomParticipants.value.filter(p => !leftIds.includes(p.id));
-        participantsCount.value = roomParticipants.value.length;
-      })
-      .on('presence', { event: 'sync' }, () => {
-        // Get the full list of participants when syncing
-        const presences = currentChannel.value.presenceState();
-        console.log('Presence sync:', presences);
-        
-        // Flatten the presences object into an array
-        const participantsList = Object.values(presences).flat();
-        roomParticipants.value = participantsList;
-        participantsCount.value = participantsList.length;
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to channel');
-          // Join the current user to the room with their user data
+          // Track user presence
           try {
-            const { profile } = useUserProfile();
-            const user = useSupabaseUser();
+            // Add a slight delay to ensure channel is ready
+            await new Promise(resolve => setTimeout(resolve, 500));
             
-            if (user.value && profile.value) {
-              console.log('Tracking presence for user:', user.value.id);
-              await currentChannel.value.track({
-                id: user.value.id,
-                name: profile.value.name,
-                team_id: profile.value.team_id,
-                online_at: new Date().toISOString()
-              });
-            } else {
-              console.warn('Missing user or profile data for presence tracking');
-            }
-          } catch (error) {
-            console.error('Error tracking presence:', error);
+            const trackResult = await currentChannel.value.track({
+              id: user.value.id,
+              name: profile.value.name,
+              team_id: profile.value.team_id,
+              online_at: new Date().toISOString()
+            });
+            
+            console.log('Track presence result:', trackResult);
+            
+            // Force a refresh of participants
+            setTimeout(() => {
+              const state = currentChannel.value.presenceState();
+              console.log('Current presence state after tracking:', state);
+            }, 1000);
+            
+            return true;
+          } catch (trackError) {
+            console.error('Error tracking presence:', trackError);
+            return false;
           }
         } else {
-          console.log('Channel subscription status:', status);
+          console.warn('Cannot track presence: Missing user or profile data', { 
+            hasUser: !!user.value, 
+            hasProfile: !!profile.value 
+          });
+          return false;
         }
-      })
+      } else {
+        console.error('Failed to subscribe to channel:', status);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error while setting up channel:', error);
+      return false;
+    }
   }
   
   // Load more (older) messages for pagination

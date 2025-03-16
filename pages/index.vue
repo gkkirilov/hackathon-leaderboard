@@ -18,7 +18,7 @@ onMounted(async () => {
 <template>
   <div class="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300">
     <header class="bg-black/60 backdrop-blur-lg border-b border-green-900/30 shadow-lg shadow-green-900/10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <h1 class="text-3xl font-bold text-green-400 tracking-wide">AI HACKATHON LEADERBOARD</h1>
         
         <div v-if="profile" class="flex items-center space-x-4">
@@ -49,16 +49,16 @@ onMounted(async () => {
       </div>
     </header>
     
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+    <main class="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
         <!-- Left sidebar: Submission Form and Admin Panel -->
-        <div class="space-y-6 xl:col-span-1">
+        <div class="space-y-6 xl:col-span-2">
           <SubmissionForm />
           <AdminPanel />
         </div>
         
         <!-- Main content: Submissions and Leaderboard -->
-        <div class="xl:col-span-2 space-y-8">
+        <div class="xl:col-span-6 space-y-8">
           <!-- Only show LeaderboardTable when voting is enabled -->
           <LeaderboardTable v-if="votingEnabled" />
           
@@ -72,15 +72,15 @@ onMounted(async () => {
           </div>
         </div>
         
-        <!-- Global Chat on right side -->
-        <div class="xl:col-span-1 h-full">
+        <!-- Global Chat on right side (wider) -->
+        <div class="xl:col-span-4 h-full">
           <ChatBox class="h-[calc(100vh-12rem)]" />
         </div>
       </div>
     </main>
     
     <footer class="bg-black/60 backdrop-blur-lg border-t border-green-900/30 mt-12">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
         <p class="text-center text-gray-600 text-sm font-mono">
           AI HACKATHON LEADERBOARD © {{ new Date().getFullYear() }}
         </p>
