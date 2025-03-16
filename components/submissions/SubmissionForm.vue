@@ -45,13 +45,13 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="bg-black border border-green-900/30 shadow-lg shadow-green-900/5 rounded-lg overflow-hidden">
-    <div class="border-b border-green-900/30 bg-gray-900 px-6 py-4 flex items-center justify-between">
+  <div class="bg-black/60 backdrop-blur-lg border border-green-900/30 shadow-lg shadow-green-900/5 rounded-xl overflow-hidden">
+    <div class="border-b border-green-900/30 bg-gray-900/60 backdrop-blur-md px-6 py-4 flex items-center justify-between">
       <h3 class="font-bold text-lg text-green-400">SUBMIT YOUR IDEA</h3>
       <button 
         v-if="!showForm && profile?.team_id"
         @click="toggleForm"
-        class="px-4 py-2 bg-green-800 hover:bg-green-700 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm"
+        class="px-4 py-2 bg-green-800/80 hover:bg-green-700/80 text-white rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 backdrop-blur-sm text-sm"
       >
         <Icon name="lucide:plus" class="h-4 w-4 inline-block mr-1" />
         New Submission
@@ -64,7 +64,7 @@ const handleSubmit = async () => {
         Please set up your profile first to submit an idea
       </p>
       
-      <div v-if="submitSuccess" class="p-4 bg-green-900/30 border border-green-900 rounded-md text-center">
+      <div v-if="submitSuccess" class="p-4 bg-green-900/20 backdrop-blur-sm border border-green-900/50 rounded-xl text-center">
         <Icon name="lucide:check-circle" class="h-6 w-6 text-green-400 mx-auto mb-2" />
         <p class="text-green-400">Your idea has been submitted successfully!</p>
       </div>
@@ -78,7 +78,7 @@ const handleSubmit = async () => {
               v-model="title"
               type="text"
               placeholder="Your idea's title"
-              class="block w-full px-3 py-2 bg-gray-900 border border-green-900/30 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
+              class="block w-full px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
               required
             />
           </div>
@@ -90,7 +90,7 @@ const handleSubmit = async () => {
               v-model="description"
               rows="4"
               placeholder="Describe your idea in detail"
-              class="block w-full px-3 py-2 bg-gray-900 border border-green-900/30 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600 resize-none"
+              class="block w-full px-4 py-3 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-xl focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600 resize-none"
               required
             ></textarea>
           </div>
@@ -102,7 +102,7 @@ const handleSubmit = async () => {
               v-model="techStack"
               type="text"
               placeholder="e.g., Vue, Nuxt, Supabase, etc."
-              class="block w-full px-3 py-2 bg-gray-900 border border-green-900/30 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
+              class="block w-full px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
               required
             />
           </div>
@@ -110,7 +110,7 @@ const handleSubmit = async () => {
           <div class="flex gap-2">
             <button
               type="submit"
-              class="px-4 py-2 bg-green-800 hover:bg-green-700 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-green-800"
+              class="px-4 py-2 bg-green-800/80 hover:bg-green-700/80 text-white rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-green-800/80 backdrop-blur-sm"
               :disabled="isLoading || !title.trim() || !description.trim() || !techStack.trim()"
             >
               <span v-if="isLoading" class="flex items-center">
@@ -122,7 +122,7 @@ const handleSubmit = async () => {
             <button
               type="button"
               @click="toggleForm"
-              class="px-4 py-2 border border-green-900/30 rounded-md text-sm font-medium text-gray-400 bg-gray-900 hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              class="px-4 py-2 border border-green-900/30 rounded-full text-sm font-medium text-gray-400 bg-gray-900/60 hover:bg-gray-800/60 backdrop-blur-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Cancel
             </button>

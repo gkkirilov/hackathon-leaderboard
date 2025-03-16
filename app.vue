@@ -25,13 +25,13 @@
 </script>
 <style>
 body {
-  font-family: Inter, serif;
-  font-weight: 500;
+  font-family: Courier Prime, serif;
+  /* font-weight: 500; */
 }
 
-.font-courier {
+/* .font-courier {
   font-family: Courier Prime;
-}
+} */
 
 .slide-fadeup-enter-active {
   transition: all 0.3s ease-out;

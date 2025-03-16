@@ -95,7 +95,7 @@ const getTopTeams = computed(() => {
 </script>
 
 <template>
-  <div v-if="votingEnabled" class="space-y-8 bg-black text-white p-8 rounded-lg">
+  <div v-if="votingEnabled" class="space-y-8 bg-black/70 backdrop-blur-lg text-white p-8 rounded-xl border border-green-900/20 shadow-xl shadow-green-900/10">
     <!-- Leaderboard Header -->
     <div class="text-center space-y-2">
       <h2 class="text-4xl font-bold tracking-wider text-green-400">LEADERBOARD</h2>
@@ -118,7 +118,7 @@ const getTopTeams = computed(() => {
         <div v-if="getTopTeams[1]" class="relative mx-4 -mb-2 z-10 flex flex-col items-center">
           <div class="absolute -top-12 text-xl font-bold text-gray-400">[2]</div>
           <div 
-            class="w-24 h-24 border-2 border-green-400/50 rounded-md overflow-hidden flex items-center justify-center"
+            class="w-24 h-24 border-2 border-green-400/50 rounded-xl overflow-hidden flex items-center justify-center backdrop-blur-sm shadow-lg shadow-green-900/20"
             :class="getTeamColor(getTopTeams[1].teamId)"
           >
             <span class="text-4xl font-bold">{{ getTeamName(getTopTeams[1].teamId).charAt(0) }}</span>
@@ -135,7 +135,7 @@ const getTopTeams = computed(() => {
         <div v-if="getTopTeams[0]" class="relative mx-4 z-20 flex flex-col items-center">
           <div class="absolute -top-16 text-2xl font-bold text-green-400">[1]</div>
           <div 
-            class="w-32 h-32 border-4 border-green-400 rounded-md overflow-hidden flex items-center justify-center shadow-lg shadow-green-400/20"
+            class="w-32 h-32 border-4 border-green-400 rounded-xl overflow-hidden flex items-center justify-center shadow-xl shadow-green-400/30 backdrop-blur-md"
             :class="getTeamColor(getTopTeams[0].teamId)"
           >
             <span class="text-5xl font-bold">{{ getTeamName(getTopTeams[0].teamId).charAt(0) }}</span>
@@ -152,7 +152,7 @@ const getTopTeams = computed(() => {
         <div v-if="getTopTeams[2]" class="relative mx-4 -mb-4 z-10 flex flex-col items-center">
           <div class="absolute -top-10 text-xl font-bold text-gray-400">[3]</div>
           <div 
-            class="w-24 h-24 border-2 border-green-400/50 rounded-md overflow-hidden flex items-center justify-center"
+            class="w-24 h-24 border-2 border-green-400/50 rounded-xl overflow-hidden flex items-center justify-center backdrop-blur-sm shadow-lg shadow-green-900/20"
             :class="getTeamColor(getTopTeams[2].teamId)"
           >
             <span class="text-4xl font-bold">{{ getTeamName(getTopTeams[2].teamId).charAt(0) }}</span>
@@ -178,25 +178,25 @@ const getTopTeams = computed(() => {
         
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-800">
-            <thead class="bg-gray-900">
+            <thead class="bg-gray-900/70 backdrop-blur-sm">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">RANK</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">RANK</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">PLAYER</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">SUBMISSION</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">VOTES</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">VOTES</th>
               </tr>
             </thead>
-            <tbody class="bg-gray-900 divide-y divide-gray-800">
-              <tr v-for="entry in leaderboardsByCategory[category.id]" :key="entry.teamId" class="hover:bg-gray-800 transition-colors">
+            <tbody class="bg-gray-900/50 backdrop-blur-sm divide-y divide-gray-800/50">
+              <tr v-for="entry in leaderboardsByCategory[category.id]" :key="entry.teamId" class="hover:bg-gray-800/70 transition-colors">
                 <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
                   <div class="flex items-center">
                     <span 
                       v-if="entry.rank <= 3" 
-                      class="w-6 h-6 flex items-center justify-center rounded-md mr-2 text-xs font-bold"
+                      class="w-6 h-6 flex items-center justify-center rounded-full mr-2 text-xs font-bold"
                       :class="{
-                        'bg-green-500 text-black': entry.rank === 1,
-                        'bg-gray-500 text-black': entry.rank === 2,
-                        'bg-amber-700 text-black': entry.rank === 3
+                        'bg-green-500/80 backdrop-blur-sm text-black': entry.rank === 1,
+                        'bg-gray-500/80 backdrop-blur-sm text-black': entry.rank === 2,
+                        'bg-amber-700/80 backdrop-blur-sm text-black': entry.rank === 3
                       }"
                     >
                       {{ entry.rank }}
@@ -207,7 +207,7 @@ const getTopTeams = computed(() => {
                 <td class="px-4 py-3 whitespace-nowrap text-sm">
                   <div class="flex items-center space-x-2">
                     <div 
-                      class="w-8 h-8 rounded-md flex items-center justify-center text-white shadow"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-lg shadow-black/30"
                       :class="getTeamColor(entry.teamId)"
                     >
                       <span class="font-bold">{{ getTeamName(entry.teamId).charAt(0) }}</span>
@@ -225,7 +225,7 @@ const getTopTeams = computed(() => {
               </tr>
               
               <tr v-if="leaderboardsByCategory[category.id].length === 0">
-                <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500">
+                <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 rounded-b-lg">
                   No votes in this category yet
                 </td>
               </tr>

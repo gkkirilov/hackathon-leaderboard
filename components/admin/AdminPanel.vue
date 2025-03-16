@@ -14,54 +14,52 @@ const toggleVoting = async () => {
 </script>
 
 <template>
-  <div v-if="isAdmin" class="bg-black border border-green-900/30 shadow-lg shadow-green-900/5 rounded-lg overflow-hidden">
-    <div class="border-b border-green-900/30 bg-gray-900 px-6 py-4">
+  <div v-if="isAdmin" class="bg-black/60 backdrop-blur-lg border border-green-900/30 shadow-lg shadow-green-900/5 rounded-xl overflow-hidden">
+    <div class="border-b border-green-900/30 bg-gray-900/60 backdrop-blur-md px-6 py-4">
       <h3 class="font-bold text-lg text-green-400">ADMIN CONTROLS</h3>
     </div>
     
     <div class="p-6 space-y-4">
-      <div class="flex flex-col space-y-3">
-        <h4 class="text-sm font-medium text-gray-400">VOTING STATUS</h4>
-        <div class="flex items-center space-x-3 bg-gray-900 p-3 rounded-md border border-green-900/30">
-          <div class="flex items-center space-x-2">
-            <div class="relative inline-block w-10 mr-2 align-middle select-none">
-              <input 
-                id="voting-toggle" 
-                type="checkbox" 
-                :checked="votingEnabled"
-                @change="toggleVoting"
-                class="sr-only peer"
-              />
-              <div class="block w-10 h-6 bg-gray-700 rounded-full"></div>
-              <div class="absolute w-4 h-4 left-1 top-1 bg-white rounded-full transition-transform peer-checked:translate-x-4 peer-checked:bg-green-400"></div>
-            </div>
-            <label for="voting-toggle" class="text-sm text-gray-400">
-              Enable Voting
-            </label>
+      <div class="space-y-2">
+        <h4 class="text-sm font-semibold text-gray-400">Voting Status</h4>
+        <div class="flex items-center justify-between bg-gray-900/40 backdrop-blur-sm p-4 rounded-xl border border-green-900/20">
+          <div>
+            <p class="text-gray-300 font-medium">{{ votingEnabled ? 'Voting is enabled' : 'Voting is disabled' }}</p>
+            <p class="text-xs text-gray-500 mt-1">
+              {{ votingEnabled ? 'Users can vote for submissions' : 'Users cannot vote yet' }}
+            </p>
           </div>
-          <span 
-            class="text-xs px-2 py-0.5 rounded-full font-mono"
-            :class="votingEnabled ? 'bg-green-900/50 text-green-400' : 'bg-red-900/30 text-red-400'"
-          >
-            {{ votingEnabled ? 'ACTIVE' : 'INACTIVE' }}
-          </span>
+          
+          <label class="inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              :checked="votingEnabled" 
+              @change="toggleVoting" 
+              class="sr-only peer"
+            >
+            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600 shadow-inner shadow-black/50"></div>
+          </label>
         </div>
-        <p class="text-xs text-gray-500">
-          {{ votingEnabled 
-            ? 'Voting is currently enabled. Users can vote for submissions.' 
-            : 'Voting is currently disabled. Enable it to allow users to vote.' 
-          }}
-        </p>
       </div>
       
-      <div class="pt-4 border-t border-green-900/30">
-        <h4 class="text-sm font-medium text-gray-400 mb-2">INSTRUCTIONS</h4>
-        <ul class="text-xs text-gray-500 space-y-1 list-disc pl-4">
-          <li>Enable voting when you want participants to start voting on submissions</li>
-          <li>The leaderboard will automatically update as votes come in</li>
-          <li>Each user can vote once per category</li>
-          <li>You can disable voting at any time to pause the process</li>
-        </ul>
+      <div class="space-y-2">
+        <h4 class="text-sm font-semibold text-gray-400">Instructions</h4>
+        <div class="bg-gray-900/40 backdrop-blur-sm p-4 rounded-xl border border-green-900/20">
+          <ul class="text-sm text-gray-400 space-y-2">
+            <li class="flex items-start">
+              <Icon name="lucide:check-circle" class="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+              <span>Enable voting when your hackathon is ready for participants to vote</span>
+            </li>
+            <li class="flex items-start">
+              <Icon name="lucide:check-circle" class="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+              <span>The leaderboard will automatically appear once voting is enabled</span>
+            </li>
+            <li class="flex items-start">
+              <Icon name="lucide:check-circle" class="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+              <span>You can toggle voting on/off at any time</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>

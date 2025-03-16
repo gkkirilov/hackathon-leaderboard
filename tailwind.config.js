@@ -2,6 +2,9 @@ export default {
     darkMode: ["class"],
     content: [],
     theme: {
+    	fontFamily: {
+    		sans: ['Courier Prime', 'serif'],
+    	},
     	extend: {
     		borderRadius: {
     			lg: 'var(--radius)',

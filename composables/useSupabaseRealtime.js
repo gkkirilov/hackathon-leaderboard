@@ -5,7 +5,10 @@ export const useSupabaseRealtime = () => {
   const currentChannel = ref(null)
   const roomParticipants = ref([])
   const participantsCount = ref(0)
-
+  const hasMoreMessages = ref(true)
+  const currentPage = ref(1)
+  const messagesPerPage = 20 // Number of messages to load per batch
+  
   // Initialize the global chat channel
   const initGlobalChat = async () => {
     if (currentChannel.value) {
@@ -13,6 +16,7 @@ export const useSupabaseRealtime = () => {
     }
 
     messagesLoading.value = true
+    currentPage.value = 1
     
     // Load existing messages
     try {
@@ -20,10 +24,13 @@ export const useSupabaseRealtime = () => {
         .from('messages')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(messagesPerPage)
       
       if (error) throw error
       messages.value = data.reverse()
+      
+      // Check if there might be more messages
+      hasMoreMessages.value = data.length === messagesPerPage
     } catch (error) {
       console.error('Error loading messages:', error)
     } finally {
@@ -56,30 +63,99 @@ export const useSupabaseRealtime = () => {
       })
       // Track presence of users in the room
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        roomParticipants.value = [...roomParticipants.value, ...newPresences]
-        participantsCount.value = roomParticipants.value.length
+        console.log('New presences:', newPresences);
+        roomParticipants.value = [...roomParticipants.value, ...newPresences];
+        participantsCount.value = roomParticipants.value.length;
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftIds = leftPresences.map(p => p.id)
-        roomParticipants.value = roomParticipants.value.filter(p => !leftIds.includes(p.id))
-        participantsCount.value = roomParticipants.value.length
+        console.log('Left presences:', leftPresences);
+        const leftIds = leftPresences.map(p => p.id);
+        roomParticipants.value = roomParticipants.value.filter(p => !leftIds.includes(p.id));
+        participantsCount.value = roomParticipants.value.length;
+      })
+      .on('presence', { event: 'sync' }, () => {
+        // Get the full list of participants when syncing
+        const presences = currentChannel.value.presenceState();
+        console.log('Presence sync:', presences);
+        
+        // Flatten the presences object into an array
+        const participantsList = Object.values(presences).flat();
+        roomParticipants.value = participantsList;
+        participantsCount.value = participantsList.length;
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to channel');
           // Join the current user to the room with their user data
-          const { profile } = useUserProfile()
-          const user = useSupabaseUser()
-          
-          if (user.value && profile.value) {
-            await currentChannel.value.track({
-              id: user.value.id,
-              name: profile.value.name,
-              team_id: profile.value.team_id,
-              online_at: new Date().toISOString()
-            })
+          try {
+            const { profile } = useUserProfile();
+            const user = useSupabaseUser();
+            
+            if (user.value && profile.value) {
+              console.log('Tracking presence for user:', user.value.id);
+              await currentChannel.value.track({
+                id: user.value.id,
+                name: profile.value.name,
+                team_id: profile.value.team_id,
+                online_at: new Date().toISOString()
+              });
+            } else {
+              console.warn('Missing user or profile data for presence tracking');
+            }
+          } catch (error) {
+            console.error('Error tracking presence:', error);
           }
+        } else {
+          console.log('Channel subscription status:', status);
         }
       })
+  }
+  
+  // Load more (older) messages for pagination
+  const loadMoreMessages = async () => {
+    if (!hasMoreMessages.value || messagesLoading.value) return
+    
+    messagesLoading.value = true
+    
+    try {
+      // Get the oldest message's timestamp to use as a cursor
+      const oldestMessage = [...messages.value].sort((a, b) => 
+        new Date(a.created_at) - new Date(b.created_at)
+      )[0];
+      
+      const oldestTimestamp = oldestMessage?.created_at;
+      
+      if (!oldestTimestamp) {
+        hasMoreMessages.value = false;
+        return;
+      }
+      
+      // Fetch older messages before the oldest one we have
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .lt('created_at', oldestTimestamp)
+        .order('created_at', { ascending: false })
+        .limit(messagesPerPage)
+      
+      if (error) throw error
+      
+      if (data.length === 0) {
+        hasMoreMessages.value = false
+        return
+      }
+      
+      // Add older messages to the beginning of our array
+      messages.value = [...data.reverse(), ...messages.value]
+      currentPage.value++
+      
+      // Check if we might have more messages
+      hasMoreMessages.value = data.length === messagesPerPage
+    } catch (error) {
+      console.error('Error loading more messages:', error)
+    } finally {
+      messagesLoading.value = false
+    }
   }
 
   // Send a message to the global chat
@@ -128,6 +204,9 @@ export const useSupabaseRealtime = () => {
     initGlobalChat,
     sendMessage,
     roomParticipants,
-    participantsCount
+    participantsCount,
+    hasMoreMessages,
+    currentPage,
+    loadMoreMessages
   }
 }
