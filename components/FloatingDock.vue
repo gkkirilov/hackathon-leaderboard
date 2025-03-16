@@ -48,7 +48,7 @@ watch(scrollY, handleScroll)
         <!-- Logo -->
         <!-- <div class="flex items-center mr-3 md:mr-8">
           <NuxtLink to="/" class="flex items-center">
-            <img src="/logo.png" alt="Empower Studio" class="h-5 md:h-8 w-auto" />
+            <img src="/logo.png" alt="Hackaton Leaderboard" class="h-5 md:h-8 w-auto" />
           </NuxtLink>
         </div> -->
 

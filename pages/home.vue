@@ -5,7 +5,7 @@
     <section class="pt-32 pb-20 md:pt-40 md:pb-32">
       <div class="container mx-auto px-5 md:px-10">
         <div class="max-w-[900px] mx-auto text-center">
-          <img src="/logo.png" alt="Empower Studio" class="h-12 md:h-16 mx-auto mb-8" 
+          <img src="/logo.png" alt="Hackaton Leaderboard" class="h-12 md:h-16 mx-auto mb-8" 
                v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0 }" />
           
           <h1 class="text-4xl md:text-6xl font-bold tracking-tight mb-4"
@@ -39,7 +39,7 @@
         <div class="max-w-4xl mx-auto">
           <h2 class="text-4xl md:text-5xl font-bold text-black mb-4 text-center"
               v-motion :initial="{ opacity: 0, y: 30 }" :enter="{ opacity: 1, y: 0 }">
-            Защо Да Работите С Empower Studio?
+            Защо Да Работите С Hackaton Leaderboard?
           </h2>
           <div class="w-20 h-1 bg-black mx-auto mb-6"></div>
           
@@ -123,7 +123,7 @@
             <div class="bg-blue-50 rounded-3xl p-8 border border-blue-100">
               <h3 class="text-2xl font-bold mb-6 text-blue-600">💡 Решението? AI & Автоматизация на Процесите.</h3>
               <p class="text-neutral-700 mb-4">
-                Empower Studio създава AI-базирани решения, които вършат работата вместо вас, за да можете да се фокусирате върху растежа и иновациите.
+                Hackaton Leaderboard създава AI-базирани решения, които вършат работата вместо вас, за да можете да се фокусирате върху растежа и иновациите.
               </p>
               <p class="text-neutral-700 font-medium">
                 📌 Започнете с БЕЗПЛАТНА Консултация – Нека разберем колко пари може да ви спести автоматизацията.
@@ -270,13 +270,13 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           <div class="bg-neutral-900 p-8 rounded-3xl"
                v-motion :initial="{ opacity: 0, y: 30 }" :enter="{ opacity: 1, y: 0, transition: { delay: 100 } }">
-            <p class="text-xl mb-6 text-neutral-200">💬 "Empower Studio ни спести над 50 000 лева годишно чрез автоматизация на операциите ни. Най-добрата инвестиция, която някога сме правили!"</p>
+            <p class="text-xl mb-6 text-neutral-200">💬 "Hackaton Leaderboard ни спести над 50 000 лева годишно чрез автоматизация на операциите ни. Най-добрата инвестиция, която някога сме правили!"</p>
             <p class="text-blue-400 font-medium">– [Име на Клиент]</p>
           </div>
           
           <div class="bg-neutral-900 p-8 rounded-3xl"
                v-motion :initial="{ opacity: 0, y: 30 }" :enter="{ opacity: 1, y: 0, transition: { delay: 200 } }">
-            <p class="text-xl mb-6 text-neutral-200">💬 "Увеличихме мащаба си 3 пъти за една година—всичко благодарение на AI автоматизацията от Empower Studio."</p>
+            <p class="text-xl mb-6 text-neutral-200">💬 "Увеличихме мащаба си 3 пъти за една година—всичко благодарение на AI автоматизацията от Hackaton Leaderboard."</p>
             <p class="text-blue-400 font-medium">– [Име на Клиент]</p>
           </div>
           
@@ -302,7 +302,7 @@
         <div class="max-w-4xl mx-auto mb-20">
           <h2 class="text-4xl md:text-5xl font-bold text-black mb-4 text-center"
               v-motion :initial="{ opacity: 0, y: 30 }" :enter="{ opacity: 1, y: 0 }">
-            Защо Да Изберете Empower Studio?
+            Защо Да Изберете Hackaton Leaderboard?
           </h2>
           <div class="w-20 h-1 bg-black mx-auto mb-10"></div>
         </div>
@@ -427,7 +427,7 @@
                 width="100%"
                 height="700"
                 frameborder="0"
-                title="Select a Date & Time - Empower Studio"
+                title="Select a Date & Time - Hackaton Leaderboard"
                 data-ready="true"
               ></iframe>
             </ClientOnly>

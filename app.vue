@@ -3,13 +3,16 @@
     <div class="flex min-h-screen flex-col">
       <div class="flex-1">
         <NuxtLayout>
-        <NuxtPage />
-      </NuxtLayout>
+          <NuxtPage />
+        </NuxtLayout>
       </div>
     </div>
   </vue-lenis>
 </template>
 <script setup>
+// Note: Global middleware is now defined in the middleware directory
+// as auth.js and applied automatically to all routes
+
 // import { useLenis } from 'lenis/vue'
 
 // const lenis = useLenis((lenis) => {
@@ -21,7 +24,6 @@
 // })
 </script>
 <style>
-
 body {
   font-family: Inter, serif;
   font-weight: 500;
