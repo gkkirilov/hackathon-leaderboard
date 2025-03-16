@@ -3,7 +3,13 @@ import MatrixBackground from '~/components/stunning/MatrixBackground.vue'
 
 const { fetchProfile, profile } = useUserProfile()
 const { teamColors, getTeamColor } = useTeams()
-const { votingEnabled, checkVotingStatus } = useSubmissions()
+const { 
+  votingEnabled, 
+  submissionsEnabled,
+  checkVotingStatus,
+  checkSubmissionsStatus,
+  initStatuses
+} = useSubmissions()
 const user = useSupabaseUser()
 
 // Initialize user profile on page load
@@ -12,8 +18,10 @@ onMounted(async () => {
     await fetchProfile()
   }
   
-  // Check if voting is enabled
-  await checkVotingStatus()
+  // Initialize both statuses
+  console.log('[Index] Initializing submission and voting statuses')
+  await initStatuses()
+  console.log('[Index] Status initialized - submissions:', submissionsEnabled.value, 'voting:', votingEnabled.value)
 })
 </script>
 

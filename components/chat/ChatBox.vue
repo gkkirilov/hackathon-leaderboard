@@ -27,6 +27,7 @@ const lastMessageSender = ref(null)
 const isSoundMuted = ref(false)
 const isSoundLoaded = ref(false)
 const soundLoadError = ref(null)
+const isNearTop = ref(false)
 
 // Initialize chat on component mount and fetch profile if needed
 onMounted(async () => {
@@ -59,9 +60,17 @@ onMounted(async () => {
     }
   }, 5000)
   
-  // Clean up interval
+  // Set up scroll event listener
+  if (chatContainer.value) {
+    chatContainer.value.addEventListener('scroll', checkScroll);
+  }
+  
+  // Clean up interval and event listener
   onUnmounted(() => {
     clearInterval(logInterval)
+    if (chatContainer.value) {
+      chatContainer.value.removeEventListener('scroll', checkScroll);
+    }
   })
 })
 
@@ -183,9 +192,11 @@ watch(messages, (newMessages, oldMessages) => {
     checkForQuestions(newMessages)
   }
   
+  // Fix: we need to scroll to the bottom since messages are displayed in reversed order
   nextTick(() => {
     if (chatContainer.value) {
-      chatContainer.value.scrollTop = 0 // Scroll to top for newest messages
+      console.log('[ChatBox] Scrolling message container to bottom')
+      chatContainer.value.scrollTop = chatContainer.value.scrollHeight
     }
   })
 }, { immediate: true, deep: true })
@@ -208,8 +219,27 @@ const handleLoadMore = async () => {
   if (loadingMore.value || !hasMoreMessages.value) return;
   
   loadingMore.value = true;
+  
+  // Store the current scroll height before loading more messages
+  const scrollHeightBefore = chatContainer.value?.scrollHeight || 0;
+  console.log('[ChatBox] Scroll height before loading more:', scrollHeightBefore);
+  
   await loadMoreMessages();
-  loadingMore.value = false;
+  
+  // After loading more messages, calculate how much the scroll height has changed
+  // and adjust the scroll position to maintain the relative view
+  nextTick(() => {
+    if (chatContainer.value) {
+      const newScrollHeight = chatContainer.value.scrollHeight;
+      const scrollHeightDiff = newScrollHeight - scrollHeightBefore;
+      console.log('[ChatBox] New scroll height:', newScrollHeight, 'Difference:', scrollHeightDiff);
+      
+      // Adjust scroll position to maintain the same relative view
+      chatContainer.value.scrollTop = chatContainer.value.scrollTop + scrollHeightDiff;
+      console.log('[ChatBox] Adjusted scroll position after loading more messages');
+    }
+    loadingMore.value = false;
+  });
 }
 
 // Send message function
@@ -229,10 +259,11 @@ const handleSendMessage = () => {
   // Add to local messages first for immediate display
   localMessages.value.push(newMessage)
   
-  // Scroll to top to see the new message
+  // Fix: Scroll to the bottom to see the new message since display is reversed
   nextTick(() => {
     if (chatContainer.value) {
-      chatContainer.value.scrollTop = 0
+      console.log('[ChatBox] Scrolling to bottom after sending message')
+      chatContainer.value.scrollTop = chatContainer.value.scrollHeight
     }
   })
   
@@ -246,12 +277,35 @@ const handleSendMessage = () => {
     newMessage.team_id
   )
 }
+
+// Check if user is near the top of the message container (for auto-loading more messages)
+const checkScroll = () => {
+  if (!chatContainer.value) return;
+  
+  // Consider "near top" to be within 200px of the scroll end
+  const nearTopThreshold = 200;
+  const isNearScrollEnd = chatContainer.value.scrollTop >= (chatContainer.value.scrollHeight - chatContainer.value.clientHeight - nearTopThreshold);
+  
+  isNearTop.value = isNearScrollEnd;
+  
+  // Log scroll position every 10th check (to avoid console spam)
+  if (Math.random() < 0.1) {
+    console.log(
+      '[ChatBox] Scroll position:',
+      chatContainer.value.scrollTop,
+      'of',
+      chatContainer.value.scrollHeight - chatContainer.value.clientHeight,
+      'isNearTop:',
+      isNearTop.value
+    );
+  }
+}
 </script>
 
 <template>
   <div class="flex flex-col h-full rounded-xl overflow-hidden bg-gray-900/60 backdrop-blur-lg border border-green-900/20 shadow-xl shadow-green-900/10 relative">
-    <!-- AI Control Panel - placed in the relative container and absolutely positioned -->
-    <AIControlPanel />
+    <!-- AI Control Panel - moved to work with the toggle button -->
+    <AIControlPanel ref="aiControlPanel" />
     
     <!-- Notification Sound -->
     <audio 
@@ -328,6 +382,22 @@ const handleSendMessage = () => {
           class="flex-1 px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
           :disabled="!profile?.name"
         />
+        
+        <!-- AI Assistant Button -->
+        <button
+          type="button"
+          @click="$refs.aiControlPanel?.togglePanel()"
+          class="p-2 bg-gray-900/80 hover:bg-gray-800 text-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 backdrop-blur-sm transition-colors flex items-center justify-center relative"
+          :class="{ 'bg-green-900/70 text-green-300': $refs.aiControlPanel?.localAIActive }"
+          title="AI Assistant Settings"
+        >
+          <Icon :name="$refs.aiControlPanel?.localAIActive ? 'lucide:bot' : 'lucide:bot-offline'" class="h-5 w-5" />
+          <span v-if="$refs.aiControlPanel?.localAIActive" class="absolute -top-1 -right-1 flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </span>
+        </button>
+        
         <button
           type="submit"
           class="px-4 py-2 bg-green-900/80 hover:bg-green-800 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:bg-gray-800/50 backdrop-blur-sm transition-colors flex items-center justify-center"
@@ -352,9 +422,10 @@ const handleSendMessage = () => {
     <!-- Message Display Area (Newest first) -->
     <div 
       ref="chatContainer"
-      class="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-green-900/50 scrollbar-track-gray-900/30"
+      class="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-green-900/50 scrollbar-track-gray-900/30 flex flex-col-reverse"
+      @scroll="checkScroll"
     >
-      <div class="space-y-3">
+      <div class="space-y-3 min-h-full">
         <div v-if="messagesLoading || isJoiningChat" class="flex justify-center py-4">
           <div class="animate-spin h-6 w-6 border-2 border-green-500 rounded-full border-t-transparent"></div>
         </div>
@@ -395,6 +466,7 @@ const handleSendMessage = () => {
             @click="handleLoadMore"
             class="px-4 py-2 bg-gray-800/70 hover:bg-gray-700/70 text-gray-300 border border-green-900/30 rounded-full text-sm backdrop-blur-sm transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
             :disabled="loadingMore"
+            :class="{'animate-pulse bg-green-900/30': isNearTop && hasMoreMessages}"
           >
             <span v-if="loadingMore" class="flex items-center">
               <span class="h-3 w-3 mr-2 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></span>

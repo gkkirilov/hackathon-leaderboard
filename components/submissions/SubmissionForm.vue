@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
-const { userProfile } = useUserProfile()
+const { profile } = useUserProfile()
 const { submitIdea, isLoading, error, submissionsEnabled, checkSubmissionsStatus } = useSubmissions()
 
 const title = ref('')
@@ -16,7 +16,7 @@ onMounted(async () => {
 })
 
 const canSubmit = computed(() => {
-  return userProfile.value?.team_id && submissionsEnabled.value
+  return profile.value?.team_id && submissionsEnabled.value
 })
 
 const toggleForm = () => {
@@ -24,10 +24,11 @@ const toggleForm = () => {
     return
   }
   
-  if (!showForm.value) {
+  showForm.value = !showForm.value
+  
+  if (showForm.value) {
     resetForm()
   }
-  showForm.value = !showForm.value
 }
 
 const resetForm = () => {
@@ -38,7 +39,7 @@ const resetForm = () => {
 }
 
 const handleSubmit = async () => {
-  if (!userProfile.value?.team_id) {
+  if (!profile.value?.team_id) {
     return
   }
   
@@ -47,7 +48,7 @@ const handleSubmit = async () => {
   }
   
   const result = await submitIdea(
-    userProfile.value.team_id,
+    profile.value.team_id,
     title.value,
     description.value,
     techStack.value
@@ -62,6 +63,10 @@ const handleSubmit = async () => {
 
 <template>
   <div class="bg-black border border-green-900/30 rounded-lg p-4 shadow-lg">
+    <div class="border-b border-green-900/30 pb-3 mb-4">
+      <h2 class="text-lg font-bold text-green-400">SUBMIT PROJECT</h2>
+    </div>
+    
     <!-- Submission Status Message -->
     <div v-if="!submissionsEnabled" class="mb-4 p-4 bg-red-900/20 border border-red-900/30 rounded-lg text-center">
       <Icon name="lucide:alert-circle" class="inline-block mr-2 text-red-500" />
@@ -69,9 +74,14 @@ const handleSubmit = async () => {
     </div>
     
     <!-- No Profile Message -->
-    <div v-else-if="!userProfile?.team_id" class="mb-4 p-4 bg-amber-900/20 border border-amber-900/30 rounded-lg text-center">
+    <div v-else-if="!profile?.team_id" class="mb-4 p-4 bg-amber-900/20 border border-amber-900/30 rounded-lg text-center">
       <Icon name="lucide:alert-triangle" class="inline-block mr-2 text-amber-500" />
       <span class="text-amber-400">You need to select a team in your profile before submitting</span>
+      <div class="mt-2">
+        <NuxtLink to="/profile" class="text-green-400 hover:text-green-300 underline">
+          Go to profile settings
+        </NuxtLink>
+      </div>
     </div>
     
     <!-- Success Message -->
@@ -81,15 +91,23 @@ const handleSubmit = async () => {
     </div>
     
     <!-- Form Toggle Button -->
-    <div v-if="!showForm" class="text-center">
+    <div v-if="!showForm && !submissionSuccess" class="flex justify-center">
       <button 
         @click="toggleForm" 
-        class="bg-gradient-to-b from-green-700 to-green-900 text-white font-medium py-2.5 px-6 rounded-lg shadow-lg shadow-green-900/30 hover:from-green-600 hover:to-green-800 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
+        class="bg-gradient-to-b from-green-600 to-green-800 text-white font-medium py-3 px-6 rounded-lg shadow-lg shadow-green-900/30 hover:from-green-500 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center w-full"
         :disabled="!canSubmit"
       >
-        <Icon name="lucide:plus-circle" class="mr-2" />
-        Submit Project Idea
+        <Icon name="lucide:plus-circle" class="mr-2 h-5 w-5" />
+        <span class="font-bold">Submit Your Project</span>
       </button>
+    </div>
+    
+    <!-- Disabled Button with Reason -->
+    <div v-if="!showForm && !canSubmit && !submissionSuccess && submissionsEnabled" class="mt-3 text-center">
+      <p v-if="!profile?.team_id" class="text-amber-400 text-sm">
+        <Icon name="lucide:info" class="inline-block mr-1 h-4 w-4" />
+        Set up your profile first to enable submissions
+      </p>
     </div>
     
     <!-- Submission Form -->
@@ -145,7 +163,7 @@ const handleSubmit = async () => {
       <div class="flex space-x-3 pt-2">
         <button
           type="submit"
-          class="bg-gradient-to-b from-green-700 to-green-900 text-white font-medium py-2 px-4 rounded-md shadow-md shadow-green-900/30 hover:from-green-600 hover:to-green-800 transition-all duration-200 flex items-center"
+          class="bg-gradient-to-b from-green-600 to-green-800 text-white font-medium py-2 px-4 rounded-md shadow-md shadow-green-900/30 hover:from-green-500 hover:to-green-700 transition-all duration-200 flex items-center"
           :disabled="isLoading"
         >
           <Icon v-if="isLoading" name="lucide:loader-2" class="mr-2 animate-spin" />

@@ -54,31 +54,20 @@ const toggleAI = () => {
 const togglePanel = () => {
   isPanelOpen.value = !isPanelOpen.value
 }
+
+// Expose to parent component
+defineExpose({
+  localAIActive,
+  togglePanel
+})
 </script>
 
 <template>
   <div class="relative">
-    <!-- AI Status Button -->
-    <button 
-      @click="togglePanel"
-      class="fixed top-28 right-8 p-3 rounded-full bg-green-900/70 hover:bg-green-800 transition-colors z-50 shadow-lg shadow-black/30 border border-green-500/30"
-      :class="localAIActive ? 'text-green-300 animate-pulse' : 'text-gray-300'"
-      :title="localAIActive ? 'AI Assistant Active' : 'AI Assistant Inactive'"
-    >
-      <Icon 
-        :name="localAIActive ? 'lucide:bot' : 'lucide:bot-offline'" 
-        class="h-6 w-6"
-      />
-      <span v-if="localAIActive" class="absolute -top-1 -right-1 flex h-3 w-3">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-      </span>
-    </button>
-    
     <!-- Settings Panel -->
     <div 
       v-if="isPanelOpen"
-      class="fixed top-44 right-8 w-80 bg-black/90 backdrop-blur-lg border border-green-500/30 rounded-xl shadow-lg shadow-green-900/20 p-4 z-50"
+      class="fixed bottom-20 right-8 w-80 bg-black/90 backdrop-blur-lg border border-green-500/30 rounded-xl shadow-lg shadow-green-900/20 p-4 z-50"
     >
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-sm font-bold text-green-400">AI ASSISTANT SETTINGS</h3>
