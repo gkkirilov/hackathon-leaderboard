@@ -39,6 +39,14 @@ onMounted(async () => {
             </div>
           </div>
           
+          <NuxtLink 
+            to="/profile"
+            class="p-2 text-gray-500 hover:text-green-400 transition-colors bg-gray-900/60 backdrop-blur-md rounded-full border border-green-900/30"
+            title="Edit Profile"
+          >
+            <Icon name="lucide:user-cog" class="h-5 w-5" />
+          </NuxtLink>
+          
           <button 
             @click="async () => { await useSupabaseClient().auth.signOut(); navigateTo('/login') }"
             class="p-2 text-gray-500 hover:text-green-400 transition-colors bg-gray-900/60 backdrop-blur-md rounded-full border border-green-900/30"
@@ -74,17 +82,17 @@ onMounted(async () => {
         
         <!-- Global Chat on right side (wider) -->
         <div class="xl:col-span-4 h-full">
-          <ChatBox class="h-[calc(100vh-12rem)]" />
+          <ChatBox class="max-h-[calc(100vh-10rem)]" />
         </div>
       </div>
     </main>
     
-    <footer class="bg-black/60 backdrop-blur-lg border-t border-green-900/30 mt-12">
+    <!-- <footer class="bg-black/60 backdrop-blur-lg border-t border-green-900/30 mt-12">
       <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
         <p class="text-center text-gray-600 text-sm font-mono">
           AI HACKATHON LEADERBOARD © {{ new Date().getFullYear() }}
         </p>
       </div>
-    </footer>
+    </footer> -->
   </div>
 </template>
