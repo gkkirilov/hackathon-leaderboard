@@ -49,10 +49,9 @@ const handleSubmit = async () => {
     <div class="border-b border-green-900/30 bg-gray-900 px-6 py-4 flex items-center justify-between">
       <h3 class="font-bold text-lg text-green-400">SUBMIT YOUR IDEA</h3>
       <button 
-        v-if="!showForm"
+        v-if="!showForm && profile?.team_id"
         @click="toggleForm"
-        class="px-4 py-2 bg-green-800 hover:bg-green-700 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-green-800 text-sm"
-        :disabled="!profile?.team_id"
+        class="px-4 py-2 bg-green-800 hover:bg-green-700 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm"
       >
         <Icon name="lucide:plus" class="h-4 w-4 inline-block mr-1" />
         New Submission

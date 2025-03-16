@@ -1,6 +1,7 @@
 <script setup>
 const { fetchProfile, profile } = useUserProfile()
 const { teamColors, getTeamColor } = useTeams()
+const { votingEnabled, checkVotingStatus } = useSubmissions()
 const user = useSupabaseUser()
 
 // Initialize user profile on page load
@@ -8,6 +9,9 @@ onMounted(async () => {
   if (user.value) {
     await fetchProfile()
   }
+  
+  // Check if voting is enabled
+  await checkVotingStatus()
 })
 </script>
 
@@ -55,7 +59,8 @@ onMounted(async () => {
         
         <!-- Main content: Submissions and Leaderboard -->
         <div class="lg:col-span-2 space-y-8">
-          <LeaderboardTable />
+          <!-- Only show LeaderboardTable when voting is enabled -->
+          <LeaderboardTable v-if="votingEnabled" />
           
           <div class="bg-black border border-green-900/30 shadow-lg shadow-green-900/5 rounded-lg overflow-hidden">
             <div class="border-b border-green-900/30 bg-gray-900 px-6 py-4">

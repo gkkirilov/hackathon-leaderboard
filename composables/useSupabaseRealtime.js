@@ -3,6 +3,8 @@ export const useSupabaseRealtime = () => {
   const messages = ref([])
   const messagesLoading = ref(true)
   const currentChannel = ref(null)
+  const roomParticipants = ref([])
+  const participantsCount = ref(0)
 
   // Initialize the global chat channel
   const initGlobalChat = async () => {
@@ -28,13 +30,38 @@ export const useSupabaseRealtime = () => {
       messagesLoading.value = false
     }
 
-    // Subscribe to new messages
+    // Subscribe to new messages and presence
     currentChannel.value = supabase
       .channel('global-chat')
       .on('broadcast', { event: 'chat-message' }, (payload) => {
         messages.value.push(payload)
       })
-      .subscribe()
+      // Track presence of users in the room
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        roomParticipants.value = [...roomParticipants.value, ...newPresences]
+        participantsCount.value = roomParticipants.value.length
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        const leftIds = leftPresences.map(p => p.id)
+        roomParticipants.value = roomParticipants.value.filter(p => !leftIds.includes(p.id))
+        participantsCount.value = roomParticipants.value.length
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Join the current user to the room with their user data
+          const { profile } = useUserProfile()
+          const user = useSupabaseUser()
+          
+          if (user.value && profile.value) {
+            await currentChannel.value.track({
+              id: user.value.id,
+              name: profile.value.name,
+              team_id: profile.value.team_id,
+              online_at: new Date().toISOString()
+            })
+          }
+        }
+      })
   }
 
   // Send a message to the global chat
@@ -48,6 +75,9 @@ export const useSupabaseRealtime = () => {
         team_id: teamId,
         created_at: new Date().toISOString()
       }
+      
+      // Optimistically add message to local state immediately
+      messages.value.push(newMessage)
       
       // Save to database
       const { error } = await supabase
@@ -78,6 +108,8 @@ export const useSupabaseRealtime = () => {
     messages,
     messagesLoading,
     initGlobalChat,
-    sendMessage
+    sendMessage,
+    roomParticipants,
+    participantsCount
   }
 }

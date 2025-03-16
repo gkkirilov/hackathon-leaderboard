@@ -95,7 +95,7 @@ const getTopTeams = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-8 bg-black text-white p-8 rounded-lg">
+  <div v-if="votingEnabled" class="space-y-8 bg-black text-white p-8 rounded-lg">
     <!-- Leaderboard Header -->
     <div class="text-center space-y-2">
       <h2 class="text-4xl font-bold tracking-wider text-green-400">LEADERBOARD</h2>
@@ -106,7 +106,7 @@ const getTopTeams = computed(() => {
     </div>
     
     <!-- Featured Top Players -->
-    <div v-if="votingEnabled && submissions.length > 0" class="relative py-16">
+    <div v-if="submissions.length > 0" class="relative py-16">
       <!-- 3D Grid Background -->
       <div class="absolute inset-0 grid grid-cols-6 grid-rows-6">
         <div v-for="i in 36" :key="i" class="border-b border-r border-green-900/20"></div>
@@ -164,13 +164,6 @@ const getTopTeams = computed(() => {
           </div>
           <div class="text-xs text-gray-500 font-mono mt-1">VOLUME</div>
         </div>
-      </div>
-    </div>
-    
-    <div v-if="!votingEnabled" class="bg-gray-900 border border-yellow-500/20 p-4 rounded-md">
-      <div class="flex items-center">
-        <Icon name="lucide:alert-triangle" class="h-5 w-5 text-yellow-500 mr-2" />
-        <p class="text-yellow-400">Voting is not yet open. Leaderboards will be available once voting starts.</p>
       </div>
     </div>
     
