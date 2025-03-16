@@ -94,7 +94,7 @@ onMounted(async () => {
         </div>
         
         <!-- Global Chat on right side (wider) -->
-        <div class="xl:col-span-4 h-full">
+        <div class="xl:col-span-4">
           <ChatBox class="max-h-[calc(100vh-10rem)]" />
         </div>
       </div>

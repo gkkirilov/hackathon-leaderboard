@@ -63,6 +63,13 @@ onMounted(async () => {
   // Set up scroll event listener
   if (chatContainer.value) {
     chatContainer.value.addEventListener('scroll', checkScroll);
+    
+    // Add explicit wheel event listener to ensure mousewheel scrolling works
+    chatContainer.value.addEventListener('wheel', handleWheel, { passive: true });
+    
+    // Add touch event listeners for mobile scrolling
+    chatContainer.value.addEventListener('touchstart', handleTouchStart, { passive: true });
+    chatContainer.value.addEventListener('touchmove', handleTouchMove, { passive: true });
   }
   
   // Clean up interval and event listener
@@ -70,6 +77,9 @@ onMounted(async () => {
     clearInterval(logInterval)
     if (chatContainer.value) {
       chatContainer.value.removeEventListener('scroll', checkScroll);
+      chatContainer.value.removeEventListener('wheel', handleWheel);
+      chatContainer.value.removeEventListener('touchstart', handleTouchStart);
+      chatContainer.value.removeEventListener('touchmove', handleTouchMove);
     }
   })
 })
@@ -192,11 +202,11 @@ watch(messages, (newMessages, oldMessages) => {
     checkForQuestions(newMessages)
   }
   
-  // Fix: we need to scroll to the bottom since messages are displayed in reversed order
+  // Update scroll logic since we're no longer using reversed flex direction
   nextTick(() => {
-    if (chatContainer.value) {
-      console.log('[ChatBox] Scrolling message container to bottom')
-      chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+    if (chatContainer.value && !isNearTop.value) {
+      console.log('[ChatBox] Scrolling message container to top for newest messages')
+      chatContainer.value.scrollTop = 0
     }
   })
 }, { immediate: true, deep: true })
@@ -220,22 +230,22 @@ const handleLoadMore = async () => {
   
   loadingMore.value = true;
   
-  // Store the current scroll height before loading more messages
+  // Store current scroll position before loading more messages
+  const scrollTopBefore = chatContainer.value?.scrollTop || 0;
   const scrollHeightBefore = chatContainer.value?.scrollHeight || 0;
-  console.log('[ChatBox] Scroll height before loading more:', scrollHeightBefore);
+  console.log('[ChatBox] Scroll position before loading more:', scrollTopBefore);
   
   await loadMoreMessages();
   
-  // After loading more messages, calculate how much the scroll height has changed
-  // and adjust the scroll position to maintain the relative view
+  // After loading more messages, adjust the scroll position to maintain the view
   nextTick(() => {
     if (chatContainer.value) {
       const newScrollHeight = chatContainer.value.scrollHeight;
       const scrollHeightDiff = newScrollHeight - scrollHeightBefore;
       console.log('[ChatBox] New scroll height:', newScrollHeight, 'Difference:', scrollHeightDiff);
       
-      // Adjust scroll position to maintain the same relative view
-      chatContainer.value.scrollTop = chatContainer.value.scrollTop + scrollHeightDiff;
+      // Adjust scroll position to maintain the same relative view of newer messages
+      chatContainer.value.scrollTop = scrollTopBefore + scrollHeightDiff;
       console.log('[ChatBox] Adjusted scroll position after loading more messages');
     }
     loadingMore.value = false;
@@ -259,11 +269,11 @@ const handleSendMessage = () => {
   // Add to local messages first for immediate display
   localMessages.value.push(newMessage)
   
-  // Fix: Scroll to the bottom to see the new message since display is reversed
+  // Scroll to top to see new message since messages are sorted newest first
   nextTick(() => {
     if (chatContainer.value) {
-      console.log('[ChatBox] Scrolling to bottom after sending message')
-      chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+      console.log('[ChatBox] Scrolling to top after sending message')
+      chatContainer.value.scrollTop = 0
     }
   })
   
@@ -278,15 +288,15 @@ const handleSendMessage = () => {
   )
 }
 
-// Check if user is near the top of the message container (for auto-loading more messages)
+// Check if user is near the bottom of the message container (for auto-loading more messages)
 const checkScroll = () => {
   if (!chatContainer.value) return;
   
-  // Consider "near top" to be within 200px of the scroll end
-  const nearTopThreshold = 200;
-  const isNearScrollEnd = chatContainer.value.scrollTop >= (chatContainer.value.scrollHeight - chatContainer.value.clientHeight - nearTopThreshold);
-  
-  isNearTop.value = isNearScrollEnd;
+  // For a normal scrolling experience with newest at top, we need to check if user is near bottom
+  // since that's where older messages would be loaded
+  const nearBottomThreshold = 200;
+  const scrollBottom = chatContainer.value.scrollHeight - chatContainer.value.scrollTop - chatContainer.value.clientHeight;
+  isNearTop.value = scrollBottom < nearBottomThreshold;
   
   // Log scroll position every 10th check (to avoid console spam)
   if (Math.random() < 0.1) {
@@ -294,16 +304,56 @@ const checkScroll = () => {
       '[ChatBox] Scroll position:',
       chatContainer.value.scrollTop,
       'of',
-      chatContainer.value.scrollHeight - chatContainer.value.clientHeight,
-      'isNearTop:',
-      isNearTop.value
+      chatContainer.value.scrollHeight,
+      'nearBottom:',
+      isNearTop.value,
+      'scrollBottom:',
+      scrollBottom
     );
+  }
+}
+
+// Handle mousewheel events for scrolling
+const handleWheel = (event) => {
+  if (chatContainer.value) {
+    // Prevent default only if needed (usually not necessary with passive listeners)
+    // event.preventDefault(); 
+    
+    // Adjust scroll position based on wheel delta
+    chatContainer.value.scrollTop += event.deltaY;
+    
+    // Update scroll check
+    checkScroll();
+  }
+}
+
+// Touch event handling for mobile scrolling
+let touchStartY = 0;
+
+const handleTouchStart = (event) => {
+  if (event.touches.length === 1) {
+    touchStartY = event.touches[0].clientY;
+  }
+}
+
+const handleTouchMove = (event) => {
+  if (event.touches.length === 1) {
+    const touchY = event.touches[0].clientY;
+    const diff = touchStartY - touchY;
+    
+    if (chatContainer.value) {
+      chatContainer.value.scrollTop += diff;
+      touchStartY = touchY;
+    }
+    
+    // Update scroll check
+    checkScroll();
   }
 }
 </script>
 
 <template>
-  <div class="flex flex-col h-full rounded-xl overflow-hidden bg-gray-900/60 backdrop-blur-lg border border-green-900/20 shadow-xl shadow-green-900/10 relative">
+  <div class="flex flex-col h-full rounded-xl overflow-hidden bg-gray-900/60 backdrop-blur-lg border border-green-900/20 shadow-xl shadow-green-900/10 relative touch-auto">
     <!-- AI Control Panel - moved to work with the toggle button -->
     <AIControlPanel ref="aiControlPanel" />
     
@@ -422,10 +472,10 @@ const checkScroll = () => {
     <!-- Message Display Area (Newest first) -->
     <div 
       ref="chatContainer"
-      class="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-green-900/50 scrollbar-track-gray-900/30 flex flex-col-reverse"
+      class="flex-1 overflow-y-auto overflow-x-hidden p-4 scrollbar-thin scrollbar-thumb-green-900/50 scrollbar-track-gray-900/30 flex flex-col w-full h-full overscroll-contain will-change-scroll"
       @scroll="checkScroll"
     >
-      <div class="space-y-3 min-h-full">
+      <div class="space-y-3 min-h-full w-full">
         <div v-if="messagesLoading || isJoiningChat" class="flex justify-center py-4">
           <div class="animate-spin h-6 w-6 border-2 border-green-500 rounded-full border-t-transparent"></div>
         </div>
@@ -436,6 +486,15 @@ const checkScroll = () => {
             <p class="text-xs mt-1 text-green-500/50">Be the first to say hello!</p>
           </div>
         </template>
+        
+        <!-- End of Messages Indicator -->
+        <div v-if="!hasMoreMessages && localMessages.length > 0 && !messagesLoading" class="text-center py-3">
+          <div class="flex items-center justify-center">
+            <div class="h-px w-16 bg-green-900/30"></div>
+            <span class="text-xs text-gray-500 mx-3">End of message history</span>
+            <div class="h-px w-16 bg-green-900/30"></div>
+          </div>
+        </div>
         
         <div 
           v-for="(message, index) in [...localMessages].reverse()" 
@@ -478,16 +537,21 @@ const checkScroll = () => {
             </span>
           </button>
         </div>
-        
-        <!-- End of Messages Indicator -->
-        <div v-if="!hasMoreMessages && localMessages.length > 0 && !messagesLoading" class="text-center py-3">
-          <div class="flex items-center justify-center">
-            <div class="h-px w-16 bg-green-900/30"></div>
-            <span class="text-xs text-gray-500 mx-3">End of message history</span>
-            <div class="h-px w-16 bg-green-900/30"></div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Ensure proper scrolling behavior */
+.flex-1 {
+  flex: 1 1 auto;
+  min-height: 0; /* This is crucial for proper flex scrolling */
+}
+
+/* Improve scrolling performance */
+.will-change-scroll {
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+}
+</style>
