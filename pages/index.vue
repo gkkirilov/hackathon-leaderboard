@@ -1,4 +1,6 @@
 <script setup>
+import MatrixBackground from '~/components/MatrixBackground.vue'
+
 const { fetchProfile, profile } = useUserProfile()
 const { teamColors, getTeamColor } = useTeams()
 const { votingEnabled, checkVotingStatus } = useSubmissions()
@@ -17,8 +19,8 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300 relative overflow-hidden">
-    <!-- Matrix code animation -->
-    <div class="matrix-code absolute inset-0 opacity-30 pointer-events-none"></div>
+    <!-- Interactive Matrix code animation -->
+    <MatrixBackground />
     
     <header class="bg-black/60 backdrop-blur-lg border-b border-green-900/30 shadow-lg shadow-green-900/10 relative z-10">
       <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -101,46 +103,116 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.matrix-code {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cfilter id='a' x='0' y='0'%3E%3CfeGaussianBlur stdDeviation='20'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='%23000'/%3E%3Cg filter='url(%23a)'%3E%3Cg fill-opacity='.5'%3E%3Ccircle r='3' cx='0' cy='0' fill='%2369f723'/%3E%3Ccircle r='3' cx='0' cy='0' fill='%2369f723'/%3E%3Ccircle r='3' cx='0' cy='0' fill='%2369f723'/%3E%3Ccircle r='3' cx='0' cy='0' fill='%2369f723'/%3E%3Ccircle r='3' cx='0' cy='0' fill='%2369f723'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  background-size: cover;
-  animation: matrix-animation 20s linear infinite;
-  z-index: 1;
+/* Matrix background styling */
+.matrix-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: black;
+  overflow: hidden;
 }
 
-@keyframes matrix-animation {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 0% 100%;
-  }
+.matrix-background::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjIwMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8ZmlsdGVyIGlkPSJibHVyIiB4PSIwIiB5PSIwIj4KICAgICAgPGZlR2F1c3NpYW5CbHVyIGluPSJTb3VyY2VHcmFwaGljIiBzdGREZXZpYXRpb249IjAuOCIgLz4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJibGFjayIvPgogIDxnIGZpbHRlcj0idXJsKCNibHVyKSIgZmlsbD0ibm9uZSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNCIgZmlsbC1vcGFjaXR5PSIwLjgiPgogICAgPHRleHQgeD0iMCIgeT0iMTAwIiBmaWxsPSIjMDBmZjAwIj4xMDExMDAwMTAxMTEwMTAwMDExMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjEyMCIgZmlsbD0iIzAwZmYwMCI+MDEwMDExMTAxMDAxMTAwMTEwMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjE0MCIgZmlsbD0iIzAwZmYwMCI+MDAxMTAxMDEwMDExMDAxMDAwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjE2MCIgZmlsbD0iIzAwZmYwMCI+MTAwMDEwMTAxMDAxMDExMTAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjE4MCIgZmlsbD0iIzAwZmYwMCI+MDExMTAwMDEwMTAxMDAwMTAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjIwMCIgZmlsbD0iIzAwZmYwMCI+MTAxMDAxMTEwMTAwMDExMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjIyMCIgZmlsbD0iIzAwZmYwMCI+MDAxMTAxMDEwMDExMDAxMDAwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjI0MCIgZmlsbD0iIzAwZmYwMCI+MTAxMDAxMTEwMTAwMDExMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjI2MCIgZmlsbD0iIzAwZmYwMCI+MDEwMDExMTAxMDAxMTAwMTEwMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjI4MCIgZmlsbD0iIzAwZmYwMCI+MDAxMDAwMTEwMTAwMTAxMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjMwMCIgZmlsbD0iIzAwZmYwMCI+MTAxMDAxMTEwMTAwMDExMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjMyMCIgZmlsbD0iIzAwZmYwMCI+MDAxMTAxMDEwMDExMDAxMDAwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjM0MCIgZmlsbD0iIzAwZmYwMCI+MTAxMDAxMTEwMTAwMDExMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjM2MCIgZmlsbD0iIzAwZmYwMCI+MDAxMTAxMDEwMDExMDAxMDAwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjM4MCIgZmlsbD0iIzAwZmYwMCI+MDEwMDExMTAxMDAxMTAwMTEwMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjQwMCIgZmlsbD0iIzAwZmYwMCI+MDAxMDAwMTEwMTAwMTAxMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjQyMCIgZmlsbD0iIzAwZmYwMCI+MTAxMDAxMTEwMTAwMDExMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjQ0MCIgZmlsbD0iIzAwZmYwMCI+MDAxMTAxMDEwMDExMDAxMDAwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjQ2MCIgZmlsbD0iIzAwZmYwMCI+MDEwMDExMTAxMDAxMTAwMTEwMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjQ4MCIgZmlsbD0iIzAwZmYwMCI+MDAxMDAwMTEwMTAwMTAxMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjAiIHk9IjUwMCIgZmlsbD0iIzAwZmYwMCI+MTAxMDAxMTEwMTAwMDExMDAxMDwvdGV4dD4KICA8L2c+Cjwvc3ZnPg==");
+  background-repeat: repeat-y;
+  background-size: 500px auto;
+  animation: matrixRain 10s linear infinite;
+  opacity: 0.8;
 }
 
-/* Animated code rain effect */
-.matrix-code::before {
+.matrix-background::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    180deg,
-    transparent 0,
-    rgba(0, 0, 0, 0.2) 50%,
-    transparent 100%
+  background: linear-gradient(
+    0deg,
+    rgba(0, 255, 0, 0.1) 0%,
+    transparent 20%,
+    transparent 80%,
+    rgba(0, 255, 0, 0.1) 100%
   );
-  background-size: 100% 3rem;
-  animation: code-rain 2s linear infinite;
+  pointer-events: none;
 }
 
-@keyframes code-rain {
+@keyframes matrixRain {
   0% {
+    transform: translateY(0);
     background-position: 0 0;
   }
   100% {
-    background-position: 0 3rem;
+    transform: translateY(100%);
+    background-position: 100px 2000px;
+  }
+}
+
+/* Add a glowing effect to the matrix code */
+.matrix-background {
+  box-shadow: inset 0 0 80px rgba(0, 255, 0, 0.2);
+}
+
+/* Additional column effect with different speeds */
+.matrix-background::before {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+}
+
+/* Create three more matrix code columns with different positions and speeds */
+.matrix-background::after {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjIwMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8ZmlsdGVyIGlkPSJibHVyIiB4PSIwIiB5PSIwIj4KICAgICAgPGZlR2F1c3NpYW5CbHVyIGluPSJTb3VyY2VHcmFwaGljIiBzdGREZXZpYXRpb249IjAuOCIgLz4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJibGFjayIvPgogIDxnIGZpbHRlcj0idXJsKCNibHVyKSIgZmlsbD0ibm9uZSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxMCIgZmlsbC1vcGFjaXR5PSIwLjgiPgogICAgPHRleHQgeD0iNTAiIHk9IjEwMCIgZmlsbD0iIzAwZmYwMCI+MDExMTAwMDEwMTAxMDAwMTAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSIxMjAiIGZpbGw9IiMwMGZmMDAiPjExMTAxMDAxMDExMDExMDAxMDA8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iMTQwIiBmaWxsPSIjMDBmZjAwIj4xMTAwMTAxMTAxMTAxMDAwMTAxPC90ZXh0PgogICAgPHRleHQgeD0iNTAiIHk9IjE2MCIgZmlsbD0iIzAwZmYwMCI+MDAxMDExMDExMDEwMTAwMDAwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSIxODAiIGZpbGw9IiMwMGZmMDAiPjEwMTAwMTEwMDExMDExMDAxMDA8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iMjAwIiBmaWxsPSIjMDBmZjAwIj4xMTAxMDAwMTAxMTAxMDExMDExPC90ZXh0PgogICAgPHRleHQgeD0iNTAiIHk9IjIyMCIgZmlsbD0iIzAwZmYwMCI+MDAxMDExMDAxMDAxMDExMDEwMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSIyNDAiIGZpbGw9IiMwMGZmMDAiPjAxMTAxMDAxMDExMDEwMDEwMTA8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iMjYwIiBmaWxsPSIjMDBmZjAwIj4xMDExMDEwMDEwMDExMDExMDEwPC90ZXh0PgogICAgPHRleHQgeD0iNTAiIHk9IjI4MCIgZmlsbD0iIzAwZmYwMCI+MTEwMTEwMDAxMDExMDEwMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSIzMDAiIGZpbGw9IiMwMGZmMDAiPjAwMTEwMTAxMDAxMTAwMTAxMDE8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iMzIwIiBmaWxsPSIjMDBmZjAwIj4wMTEwMTAxMTAxMDAxMTAwMTAwPC90ZXh0PgogICAgPHRleHQgeD0iNTAiIHk9IjM0MCIgZmlsbD0iIzAwZmYwMCI+MTEwMDExMDAxMDEwMTEwMDEwMTwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSIzNjAiIGZpbGw9IiMwMGZmMDAiPjExMDExMDExMDAwMTAwMTEwMTA8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iMzgwIiBmaWxsPSIjMDBmZjAwIj4wMDAxMTAxMDEwMDExMDAxMDEwPC90ZXh0PgogICAgPHRleHQgeD0iNTAiIHk9IjQwMCIgZmlsbD0iIzAwZmYwMCI+MDEwMTEwMTAxMTAwMTAwMTEwMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSI0MjAiIGZpbGw9IiMwMGZmMDAiPjExMTAwMTAxMDAxMTAwMTAwMDE8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iNDQwIiBmaWxsPSIjMDBmZjAwIj4wMDEwMTAxMDExMDAxMDAxMTAwPC90ZXh0PgogICAgPHRleHQgeD0iNTAiIHk9IjQ2MCIgZmlsbD0iIzAwZmYwMCI+MTAwMTAxMTAxMTAwMTEwMDAxMDwvdGV4dD4KICAgIDx0ZXh0IHg9IjUwIiB5PSI0ODAiIGZpbGw9IiMwMGZmMDAiPjExMDAxMDEwMTAwMTExMDAxMDk8L3RleHQ+CiAgICA8dGV4dCB4PSI1MCIgeT0iNTAwIiBmaWxsPSIjMDBmZjAwIj4wMTEwMTAwMTEwMDEwMTEwMDEwPC90ZXh0PgogIDwvZz4KPC9zdmc+");
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  animation: matrixRain2 15s linear infinite;
+  opacity: 0.6;
+}
+
+@keyframes matrixRain2 {
+  0% {
+    transform: translateY(0);
+    background-position: 100px 0;
+  }
+  100% {
+    transform: translateY(100%);
+    background-position: 0 2000px;
+  }
+}
+
+/* Matrix animated code floating */
+@keyframes floatingChars {
+  0% {
+    opacity: 0;
+    transform: translateY(-100px);
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(700px);
   }
 }
 </style>

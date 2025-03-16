@@ -75,25 +75,32 @@ export const useLocalAI = () => {
     }
     
     try {
-      // Create message object
-      const newMessage = {
+      // Create message object with tempId for local tracking
+      const localMessage = {
         text: text,
         user_name: aiName.value,
         team_id: aiTeamId.value,
         created_at: new Date().toISOString(),
-        _tempId: Date.now() + Math.random().toString(36).substring(2, 9) // Add temp ID for tracking
+        _tempId: Date.now() + Math.random().toString(36).substring(2, 9) // Only for local use
       }
       
-      console.log('[AI] Sending message:', newMessage)
+      // Create database message object (without tempId)
+      const dbMessage = {
+        text: text,
+        user_name: aiName.value,
+        team_id: aiTeamId.value,
+        created_at: new Date().toISOString()
+      }
+      
+      console.log('[AI] Sending message:', text)
       
       // Add to local messages array and ensure it's reactive
-      // Use unshift instead of push to match the order in ChatBox
-      messages.value = [...messages.value, newMessage]
+      messages.value = [...messages.value, localMessage]
       console.log('[AI] Added to local messages, current count:', messages.value.length)
       
-      // Save to database
+      // Save to database - without the _tempId field
       const supabase = useSupabaseClient()
-      const { data, error } = await supabase.from('messages').insert(newMessage).select()
+      const { data, error } = await supabase.from('messages').insert(dbMessage).select()
       
       if (error) throw error
       console.log('[AI] Saved to database:', data)
@@ -102,14 +109,9 @@ export const useLocalAI = () => {
       await chatChannel.value.send({
         type: 'broadcast',
         event: 'chat-message',
-        payload: newMessage
+        payload: dbMessage // Send without _tempId
       })
       console.log('[AI] Broadcast message sent')
-      
-      // Force a console log of current messages after a slight delay
-      setTimeout(() => {
-        console.log('[AI] Current messages after broadcast:', messages.value.length)
-      }, 1000)
       
       return true
     } catch (error) {
