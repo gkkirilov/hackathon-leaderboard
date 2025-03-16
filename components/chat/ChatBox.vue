@@ -36,6 +36,19 @@ watch(messages, (newMessages) => {
   })
 }, { immediate: true, deep: true })
 
+// Format the timestamp for chat messages
+const formatMessageTime = (timestamp) => {
+  if (!timestamp) return '';
+  
+  // Validate date string
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+  
+  return date.toLocaleTimeString();
+}
+
 // Send message function
 const handleSendMessage = () => {
   if (!chatMessage.value.trim() || !profile.value?.name || !profile.value?.team_id) return
@@ -134,8 +147,8 @@ const handleSendMessage = () => {
         <div class="flex flex-col">
           <div class="flex items-center gap-2">
             <span class="font-semibold text-green-400">{{ message.user_name }}</span>
-            <span class="text-xs text-gray-500 font-mono">
-              {{ new Date(message.created_at).toLocaleTimeString() }}
+            <span v-if="formatMessageTime(message.created_at)" class="text-xs text-gray-500 font-mono">
+              {{ formatMessageTime(message.created_at) }}
             </span>
           </div>
           <p class="text-sm text-gray-300">{{ message.text }}</p>

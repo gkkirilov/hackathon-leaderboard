@@ -33,8 +33,26 @@ export const useSupabaseRealtime = () => {
     // Subscribe to new messages and presence
     currentChannel.value = supabase
       .channel('global-chat')
-      .on('broadcast', { event: 'chat-message' }, (payload) => {
-        messages.value.push(payload)
+      .on('broadcast', { event: 'chat-message' }, (data) => {
+        // The payload structure is different than expected
+        // Instead of receiving the message directly, we get {event, payload, type}
+        // Extract the actual message data from the nested payload property
+        const messageData = data.payload || {};
+        
+        // Ensure the message has required properties
+        if (messageData && typeof messageData === 'object' && 
+            messageData.text && messageData.user_name && messageData.team_id) {
+          
+          // Ensure the message has a valid timestamp
+          if (!messageData.created_at) {
+            messageData.created_at = new Date().toISOString();
+          }
+          
+          // Add the message to the messages array
+          messages.value.push(messageData);
+        } else {
+          console.error('Received invalid broadcast message format:', data);
+        }
       })
       // Track presence of users in the room
       .on('presence', { event: 'join' }, ({ newPresences }) => {
