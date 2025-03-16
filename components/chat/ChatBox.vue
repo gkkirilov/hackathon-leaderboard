@@ -21,12 +21,24 @@ const chatContainer = ref(null)
 const isJoiningChat = ref(true)
 const localMessages = ref([]) // Track messages locally
 const loadingMore = ref(false)
+const notificationSound = ref(null)
+const lastMessageTimestamp = ref(null)
+const lastMessageSender = ref(null)
+const isSoundMuted = ref(false)
+const isSoundLoaded = ref(false)
+const soundLoadError = ref(null)
 
 // Initialize chat on component mount and fetch profile if needed
 onMounted(async () => {
   // Ensure profile is loaded
   if (user.value && !profile.value) {
     await fetchProfile()
+  }
+  
+  // Load mute preference from localStorage
+  const savedMutePreference = localStorage.getItem('chatSoundMuted')
+  if (savedMutePreference !== null) {
+    isSoundMuted.value = savedMutePreference === 'true'
   }
   
   // Initialize chat with presence
@@ -36,6 +48,9 @@ onMounted(async () => {
   setTimeout(() => {
     isJoiningChat.value = false
   }, 1500)
+  
+  // Try to load the sound
+  initSound()
   
   // Log message counts periodically for debugging
   const logInterval = setInterval(() => {
@@ -50,9 +65,117 @@ onMounted(async () => {
   })
 })
 
+// Initialize and test the notification sound
+const initSound = () => {
+  setTimeout(() => {
+    if (notificationSound.value) {
+      console.log('[ChatBox] Initializing notification sound...')
+      
+      // Load and prepare the sound
+      notificationSound.value.load()
+      
+      // Test play the sound with very low volume (muted for user but tests browser capability)
+      if (!isSoundMuted.value) {
+        const originalVolume = notificationSound.value.volume
+        notificationSound.value.volume = 0.01
+        const playPromise = notificationSound.value.play()
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('[ChatBox] Sound test successful')
+              // Reset volume and pause immediately
+              notificationSound.value.pause()
+              notificationSound.value.currentTime = 0
+              notificationSound.value.volume = originalVolume
+              isSoundLoaded.value = true
+            })
+            .catch(err => {
+              console.error('[ChatBox] Sound test failed:', err)
+              soundLoadError.value = 'Browser blocked autoplay'
+            })
+        }
+      } else {
+        // Skip test if muted
+        isSoundLoaded.value = true
+      }
+    }
+  }, 2000) // Give the audio element time to load
+}
+
+// Play notification sound
+const playSound = () => {
+  if (!notificationSound.value || isSoundMuted.value || !isSoundLoaded.value) return false
+  
+  try {
+    notificationSound.value.currentTime = 0
+    const playPromise = notificationSound.value.play()
+    
+    if (playPromise !== undefined) {
+      playPromise.catch(err => {
+        console.error('[ChatBox] Error playing notification sound:', err)
+        soundLoadError.value = 'Failed to play sound: ' + err.message
+      })
+    }
+    return true
+  } catch (err) {
+    console.error('[ChatBox] Error playing notification sound:', err)
+    soundLoadError.value = 'Error: ' + err.message
+    return false
+  }
+}
+
+// Handle sound loading events
+const handleSoundLoaded = () => {
+  console.log('[ChatBox] Notification sound loaded successfully')
+  isSoundLoaded.value = true
+  soundLoadError.value = null
+}
+
+const handleSoundError = (event) => {
+  console.error('[ChatBox] Error loading notification sound:', event)
+  soundLoadError.value = 'Failed to load sound file'
+  isSoundLoaded.value = false
+}
+
+// Toggle mute/unmute notification sounds
+const toggleSound = () => {
+  isSoundMuted.value = !isSoundMuted.value
+  // Save preference to localStorage
+  localStorage.setItem('chatSoundMuted', isSoundMuted.value.toString())
+  
+  // Play a test sound when unmuting to confirm it's working
+  if (!isSoundMuted.value && isSoundLoaded.value) {
+    playSound()
+  }
+}
+
 // Copy external messages to local state
-watch(messages, (newMessages) => {
+watch(messages, (newMessages, oldMessages) => {
   console.log('[ChatBox] Messages updated, count:', newMessages.length)
+  
+  // Check if there are new messages 
+  const hasNewMessages = newMessages.length > (oldMessages?.length || 0)
+  
+  // Get the most recent message
+  const latestMessage = newMessages[newMessages.length - 1]
+  
+  // Play sound for new messages but not user's own messages
+  if (hasNewMessages && latestMessage && isSoundLoaded.value && !isSoundMuted.value) {
+    const isUserMessage = profile.value && latestMessage.user_name === profile.value.name
+    const isDuplicate = lastMessageTimestamp.value === latestMessage.created_at && 
+                        lastMessageSender.value === latestMessage.user_name
+    
+    if (!isUserMessage && !isDuplicate) {
+      console.log('[ChatBox] Playing notification sound for new message')
+      playSound()
+      
+      // Store reference to the last message to avoid double notifications
+      lastMessageTimestamp.value = latestMessage.created_at
+      lastMessageSender.value = latestMessage.user_name
+    }
+  }
+  
   localMessages.value = [...newMessages]
   
   // Check for questions that the AI should answer
@@ -130,13 +253,48 @@ const handleSendMessage = () => {
     <!-- AI Control Panel - placed in the relative container and absolutely positioned -->
     <AIControlPanel />
     
+    <!-- Notification Sound -->
+    <audio 
+      ref="notificationSound" 
+      preload="auto"
+      @canplaythrough="handleSoundLoaded"
+      @error="handleSoundError"
+    >
+      <!-- Try multiple sources to increase browser compatibility -->
+      <source src="/sounds/chat-notification.mp3" type="audio/mpeg">
+      
+    </audio>
+    
     <!-- Chat Header -->
     <div class="bg-black/50 backdrop-blur-md border-b border-green-900/30 p-3 flex items-center justify-between">
       <div class="flex items-center">
         <Icon name="lucide:message-square" class="text-green-400 h-5 w-5 mr-2" />
         <h3 class="font-bold text-sm text-green-400">GLOBAL CHAT</h3>
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center gap-3">
+        <!-- Sound toggle button with indicator -->
+        <button 
+          @click="toggleSound" 
+          class="relative text-gray-500 hover:text-gray-300 focus:outline-none"
+          :title="isSoundMuted ? 'Unmute notifications' : 'Mute notifications'"
+        >
+          <Icon 
+            :name="isSoundMuted ? 'lucide:volume-x' : 'lucide:volume-2'" 
+            class="h-5 w-5"
+            :class="{'text-green-500': !isSoundMuted && isSoundLoaded}"
+          />
+          <span 
+            v-if="!isSoundMuted && isSoundLoaded" 
+            class="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full"
+          ></span>
+          
+          <!-- Sound error indicator -->
+          <span 
+            v-if="soundLoadError" 
+            class="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"
+          ></span>
+        </button>
+        
         <span class="text-xs text-gray-500 font-mono mr-2">
           {{ participantsCount }} ONLINE
         </span>

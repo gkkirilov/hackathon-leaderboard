@@ -1,66 +1,124 @@
 <script setup>
-const { isAdmin } = useUserProfile()
-const { votingEnabled, setVotingEnabled, checkVotingStatus } = useSubmissions()
+import { ref, onMounted } from 'vue'
+const { userProfile, isAdmin } = useUserProfile()
+const { 
+  votingEnabled, 
+  setVotingEnabled, 
+  checkVotingStatus,
+  submissionsEnabled,
+  setSubmissionsEnabled,
+  checkSubmissionsStatus,
+  initStatuses
+} = useSubmissions()
 
-// Check voting status on mount
-onMounted(() => {
-  checkVotingStatus()
-})
+const isUpdatingVoting = ref(false)
+const isUpdatingSubmissions = ref(false)
 
-// Toggle voting status
 const toggleVoting = async () => {
-  await setVotingEnabled(!votingEnabled.value)
+  if (isUpdatingVoting.value) return
+  isUpdatingVoting.value = true
+  
+  try {
+    await setVotingEnabled(!votingEnabled.value)
+  } catch (err) {
+    console.error('Error toggling voting status:', err)
+  } finally {
+    isUpdatingVoting.value = false
+  }
 }
+
+const toggleSubmissions = async () => {
+  if (isUpdatingSubmissions.value) return
+  isUpdatingSubmissions.value = true
+  
+  try {
+    await setSubmissionsEnabled(!submissionsEnabled.value)
+  } catch (err) {
+    console.error('Error toggling submissions status:', err)
+  } finally {
+    isUpdatingSubmissions.value = false
+  }
+}
+
+onMounted(async () => {
+  await initStatuses()
+})
 </script>
 
 <template>
-  <div v-if="isAdmin" class="bg-black/60 backdrop-blur-lg border border-green-900/30 shadow-lg shadow-green-900/5 rounded-xl overflow-hidden">
-    <div class="border-b border-green-900/30 bg-gray-900/60 backdrop-blur-md px-6 py-4">
-      <h3 class="font-bold text-lg text-green-400">ADMIN CONTROLS</h3>
-    </div>
+  <div v-if="isAdmin" class="bg-black border border-green-900/30 rounded-lg p-4 shadow-lg">
+    <header class="border-b border-green-900/30 mb-4 pb-2">
+      <h2 class="text-xl font-bold text-green-500">Admin Control Panel</h2>
+    </header>
     
-    <div class="p-6 space-y-4">
+    <div class="space-y-6">
+      <!-- Voting Controls -->
       <div class="space-y-2">
-        <h4 class="text-sm font-semibold text-gray-400">Voting Status</h4>
-        <div class="flex items-center justify-between bg-gray-900/40 backdrop-blur-sm p-4 rounded-xl border border-green-900/20">
-          <div>
-            <p class="text-gray-300 font-medium">{{ votingEnabled ? 'Voting is enabled' : 'Voting is disabled' }}</p>
-            <p class="text-xs text-gray-500 mt-1">
-              {{ votingEnabled ? 'Users can vote for submissions' : 'Users cannot vote yet' }}
-            </p>
-          </div>
-          
-          <label class="inline-flex items-center cursor-pointer">
+        <h3 class="text-gray-400 font-semibold">Voting Status</h3>
+        <p class="text-gray-500 text-sm mb-2">
+          Enable voting to allow users to vote for submissions. Disable voting when you want to pause or end the voting period.
+        </p>
+        
+        <div class="flex items-center space-x-3">
+          <div class="relative inline-block w-12 align-middle select-none">
             <input 
               type="checkbox" 
               :checked="votingEnabled" 
               @change="toggleVoting" 
+              :disabled="isUpdatingVoting"
               class="sr-only peer"
+              id="toggle-voting"
+            />
+            <label 
+              for="toggle-voting"
+              class="block h-6 overflow-hidden bg-gray-700 rounded-full cursor-pointer peer-checked:bg-green-900 transition-colors duration-300 peer-hover:bg-gray-600 peer-checked:peer-hover:bg-green-800"
             >
-            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600 shadow-inner shadow-black/50"></div>
-          </label>
+              <span 
+                class="absolute inset-y-0 left-0 block w-6 h-6 rounded-full bg-gray-900 border border-green-700 shadow transform transition-transform duration-300 peer-checked:translate-x-6"
+              ></span>
+            </label>
+          </div>
+          <span class="text-gray-400">Voting is currently <span class="font-semibold" :class="{'text-green-500': votingEnabled, 'text-red-500': !votingEnabled}">{{ votingEnabled ? 'ACTIVE' : 'INACTIVE' }}</span></span>
         </div>
       </div>
       
+      <!-- Submissions Controls -->
       <div class="space-y-2">
-        <h4 class="text-sm font-semibold text-gray-400">Instructions</h4>
-        <div class="bg-gray-900/40 backdrop-blur-sm p-4 rounded-xl border border-green-900/20">
-          <ul class="text-sm text-gray-400 space-y-2">
-            <li class="flex items-start">
-              <Icon name="lucide:check-circle" class="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-              <span>Enable voting when your hackathon is ready for participants to vote</span>
-            </li>
-            <li class="flex items-start">
-              <Icon name="lucide:check-circle" class="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-              <span>The leaderboard will automatically appear once voting is enabled</span>
-            </li>
-            <li class="flex items-start">
-              <Icon name="lucide:check-circle" class="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-              <span>You can toggle voting on/off at any time</span>
-            </li>
-          </ul>
+        <h3 class="text-gray-400 font-semibold">Submissions Status</h3>
+        <p class="text-gray-500 text-sm mb-2">
+          Enable submissions to allow teams to submit their projects. Disable submissions when the submission period is over.
+        </p>
+        
+        <div class="flex items-center space-x-3">
+          <div class="relative inline-block w-12 align-middle select-none">
+            <input 
+              type="checkbox" 
+              :checked="submissionsEnabled" 
+              @change="toggleSubmissions" 
+              :disabled="isUpdatingSubmissions"
+              class="sr-only peer"
+              id="toggle-submissions"
+            />
+            <label 
+              for="toggle-submissions"
+              class="block h-6 overflow-hidden bg-gray-700 rounded-full cursor-pointer peer-checked:bg-green-900 transition-colors duration-300 peer-hover:bg-gray-600 peer-checked:peer-hover:bg-green-800"
+            >
+              <span 
+                class="absolute inset-y-0 left-0 block w-6 h-6 rounded-full bg-gray-900 border border-green-700 shadow transform transition-transform duration-300 peer-checked:translate-x-6"
+              ></span>
+            </label>
+          </div>
+          <span class="text-gray-400">Submissions are currently <span class="font-semibold" :class="{'text-green-500': submissionsEnabled, 'text-red-500': !submissionsEnabled}">{{ submissionsEnabled ? 'OPEN' : 'CLOSED' }}</span></span>
         </div>
       </div>
+      
+      <!-- Instructions -->
+      <div class="text-sm text-gray-500 mt-4 border-t border-green-900/30 pt-4">
+        <p><span class="text-green-500">Note:</span> Changes to these settings take effect immediately for all users.</p>
+      </div>
     </div>
+  </div>
+  <div v-else class="bg-black border border-red-900/30 rounded-lg p-4 shadow-lg text-center">
+    <p class="text-red-500">Admin access required</p>
   </div>
 </template>

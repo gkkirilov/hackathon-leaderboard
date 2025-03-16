@@ -1,136 +1,166 @@
 <script setup>
-const { profile } = useUserProfile()
-const { isLoading, error, submitIdea } = useSubmissions()
+import { ref, computed, onMounted } from 'vue'
+
+const { userProfile } = useUserProfile()
+const { submitIdea, isLoading, error, submissionsEnabled, checkSubmissionsStatus } = useSubmissions()
 
 const title = ref('')
 const description = ref('')
 const techStack = ref('')
 const showForm = ref(false)
-const submitSuccess = ref(false)
+const submissionSuccess = ref(false)
+
+// Check if submissions are enabled on component mount
+onMounted(async () => {
+  await checkSubmissionsStatus()
+})
+
+const canSubmit = computed(() => {
+  return userProfile.value?.team_id && submissionsEnabled.value
+})
 
 const toggleForm = () => {
-  showForm.value = !showForm.value
-  submitSuccess.value = false
+  if (!canSubmit.value) {
+    return
+  }
   
   if (!showForm.value) {
     resetForm()
   }
+  showForm.value = !showForm.value
 }
 
 const resetForm = () => {
   title.value = ''
   description.value = ''
   techStack.value = ''
+  submissionSuccess.value = false
 }
 
 const handleSubmit = async () => {
-  if (!title.value.trim() || !description.value.trim() || !techStack.value.trim() || !profile.value?.team_id) return
+  if (!userProfile.value?.team_id) {
+    return
+  }
+  
+  if (!submissionsEnabled.value) {
+    return
+  }
   
   const result = await submitIdea(
-    profile.value.team_id,
-    title.value.trim(),
-    description.value.trim(),
-    techStack.value.trim()
+    userProfile.value.team_id,
+    title.value,
+    description.value,
+    techStack.value
   )
   
   if (result) {
-    resetForm()
-    submitSuccess.value = true
-    setTimeout(() => {
-      showForm.value = false
-      submitSuccess.value = false
-    }, 2000)
+    submissionSuccess.value = true
+    showForm.value = false
   }
 }
 </script>
 
 <template>
-  <div class="bg-black/60 backdrop-blur-lg border border-green-900/30 shadow-lg shadow-green-900/5 rounded-xl overflow-hidden">
-    <div class="border-b border-green-900/30 bg-gray-900/60 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-      <h3 class="font-bold text-lg text-green-400">SUBMIT YOUR IDEA</h3>
+  <div class="bg-black border border-green-900/30 rounded-lg p-4 shadow-lg">
+    <!-- Submission Status Message -->
+    <div v-if="!submissionsEnabled" class="mb-4 p-4 bg-red-900/20 border border-red-900/30 rounded-lg text-center">
+      <Icon name="lucide:alert-circle" class="inline-block mr-2 text-red-500" />
+      <span class="text-red-400">Submissions are currently closed</span>
+    </div>
+    
+    <!-- No Profile Message -->
+    <div v-else-if="!userProfile?.team_id" class="mb-4 p-4 bg-amber-900/20 border border-amber-900/30 rounded-lg text-center">
+      <Icon name="lucide:alert-triangle" class="inline-block mr-2 text-amber-500" />
+      <span class="text-amber-400">You need to select a team in your profile before submitting</span>
+    </div>
+    
+    <!-- Success Message -->
+    <div v-else-if="submissionSuccess" class="mb-4 p-4 bg-green-900/20 border border-green-900/30 rounded-lg text-center">
+      <Icon name="lucide:check-circle" class="inline-block mr-2 text-green-500" />
+      <span class="text-green-400">Your idea has been submitted successfully!</span>
+    </div>
+    
+    <!-- Form Toggle Button -->
+    <div v-if="!showForm" class="text-center">
       <button 
-        v-if="!showForm && profile?.team_id"
-        @click="toggleForm"
-        class="px-4 py-2 bg-green-800/80 hover:bg-green-700/80 text-white rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 backdrop-blur-sm text-sm"
+        @click="toggleForm" 
+        class="bg-gradient-to-b from-green-700 to-green-900 text-white font-medium py-2.5 px-6 rounded-lg shadow-lg shadow-green-900/30 hover:from-green-600 hover:to-green-800 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
+        :disabled="!canSubmit"
       >
-        <Icon name="lucide:plus" class="h-4 w-4 inline-block mr-1" />
-        New Submission
+        <Icon name="lucide:plus-circle" class="mr-2" />
+        Submit Project Idea
       </button>
     </div>
     
-    <div class="p-6">
-      <p v-if="!profile?.team_id && !showForm" class="text-orange-400 text-sm">
-        <Icon name="lucide:alert-triangle" class="h-4 w-4 inline-block mr-1" />
-        Please set up your profile first to submit an idea
-      </p>
+    <!-- Submission Form -->
+    <form v-if="showForm" @submit.prevent="handleSubmit" class="space-y-4">
+      <h3 class="text-lg font-semibold text-green-500 border-b border-green-900/30 pb-2">Submit Your Project</h3>
       
-      <div v-if="submitSuccess" class="p-4 bg-green-900/20 backdrop-blur-sm border border-green-900/50 rounded-xl text-center">
-        <Icon name="lucide:check-circle" class="h-6 w-6 text-green-400 mx-auto mb-2" />
-        <p class="text-green-400">Your idea has been submitted successfully!</p>
+      <!-- Error message -->
+      <div v-if="error" class="p-3 bg-red-900/20 border border-red-900/30 rounded-md text-red-400 text-sm">
+        <Icon name="lucide:alert-circle" class="inline-block mr-1.5" />
+        {{ error }}
       </div>
       
-      <div v-if="showForm" class="mt-4">
-        <form @submit.prevent="handleSubmit" class="space-y-5">
-          <div>
-            <label for="title" class="block text-sm font-medium text-gray-400 mb-1">Title</label>
-            <input
-              id="title"
-              v-model="title"
-              type="text"
-              placeholder="Your idea's title"
-              class="block w-full px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
-              required
-            />
-          </div>
-          
-          <div>
-            <label for="description" class="block text-sm font-medium text-gray-400 mb-1">Description</label>
-            <textarea
-              id="description"
-              v-model="description"
-              rows="4"
-              placeholder="Describe your idea in detail"
-              class="block w-full px-4 py-3 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-xl focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600 resize-none"
-              required
-            ></textarea>
-          </div>
-          
-          <div>
-            <label for="tech-stack" class="block text-sm font-medium text-gray-400 mb-1">Technology Stack</label>
-            <input
-              id="tech-stack"
-              v-model="techStack"
-              type="text"
-              placeholder="e.g., Vue, Nuxt, Supabase, etc."
-              class="block w-full px-4 py-2 bg-gray-900/70 backdrop-blur-sm border border-green-900/30 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 text-gray-300 placeholder-gray-600"
-              required
-            />
-          </div>
-          
-          <div class="flex gap-2">
-            <button
-              type="submit"
-              class="px-4 py-2 bg-green-800/80 hover:bg-green-700/80 text-white rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:hover:bg-green-800/80 backdrop-blur-sm"
-              :disabled="isLoading || !title.trim() || !description.trim() || !techStack.trim()"
-            >
-              <span v-if="isLoading" class="flex items-center">
-                <span class="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Submitting...
-              </span>
-              <span v-else>Submit Idea</span>
-            </button>
-            <button
-              type="button"
-              @click="toggleForm"
-              class="px-4 py-2 border border-green-900/30 rounded-full text-sm font-medium text-gray-400 bg-gray-900/60 hover:bg-gray-800/60 backdrop-blur-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              Cancel
-            </button>
-          </div>
-          
-          <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
-        </form>
+      <!-- Title field -->
+      <div>
+        <label for="title" class="block text-sm font-medium text-gray-400 mb-1">Project Title <span class="text-red-500">*</span></label>
+        <input
+          id="title"
+          v-model="title"
+          type="text"
+          required
+          class="w-full bg-gray-900/40 border border-green-900/20 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          placeholder="Enter a catchy title"
+        />
       </div>
-    </div>
+      
+      <!-- Description field -->
+      <div>
+        <label for="description" class="block text-sm font-medium text-gray-400 mb-1">Description <span class="text-red-500">*</span></label>
+        <textarea
+          id="description"
+          v-model="description"
+          required
+          rows="4"
+          class="w-full bg-gray-900/40 border border-green-900/20 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          placeholder="Describe your project idea in detail"
+        ></textarea>
+      </div>
+      
+      <!-- Tech Stack field -->
+      <div>
+        <label for="tech-stack" class="block text-sm font-medium text-gray-400 mb-1">Technologies Used <span class="text-red-500">*</span></label>
+        <input
+          id="tech-stack"
+          v-model="techStack"
+          type="text"
+          required
+          class="w-full bg-gray-900/40 border border-green-900/20 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          placeholder="e.g. Vue, Firebase, TailwindCSS"
+        />
+      </div>
+      
+      <!-- Form buttons -->
+      <div class="flex space-x-3 pt-2">
+        <button
+          type="submit"
+          class="bg-gradient-to-b from-green-700 to-green-900 text-white font-medium py-2 px-4 rounded-md shadow-md shadow-green-900/30 hover:from-green-600 hover:to-green-800 transition-all duration-200 flex items-center"
+          :disabled="isLoading"
+        >
+          <Icon v-if="isLoading" name="lucide:loader-2" class="mr-2 animate-spin" />
+          <Icon v-else name="lucide:send" class="mr-2" />
+          Submit
+        </button>
+        
+        <button
+          type="button"
+          @click="toggleForm"
+          class="border border-green-900/30 text-gray-400 font-medium py-2 px-4 rounded-md hover:bg-gray-800 transition-colors duration-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   </div>
 </template>

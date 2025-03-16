@@ -1,5 +1,5 @@
 <script setup>
-import MatrixBackground from '~/components/MatrixBackground.vue'
+import MatrixBackground from '~/components/stunning/MatrixBackground.vue'
 
 const { fetchProfile, profile } = useUserProfile()
 const { teamColors, getTeamColor } = useTeams()

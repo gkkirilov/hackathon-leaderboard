@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { useTeams } from '../composables/useTeams'
-import { useUserProfile } from '../composables/useUserProfile'
+import { useTeams } from '../../composables/useTeams'
+import { useUserProfile } from '../../composables/useUserProfile'
 
 const { teamColors } = useTeams()
 const { profile, isLoading, error, updateProfile } = useUserProfile()

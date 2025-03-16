@@ -4,6 +4,7 @@ export const useSubmissions = () => {
   const isLoading = ref(false)
   const error = ref(null)
   const votingEnabled = ref(false)
+  const submissionsEnabled = ref(true) // Default submissions to enabled
   const userHasVoted = ref({})
 
   // Categories
@@ -41,6 +42,11 @@ export const useSubmissions = () => {
     error.value = null
     
     try {
+      // Check if submissions are enabled
+      if (!submissionsEnabled.value) {
+        throw new Error('Submissions are currently closed')
+      }
+      
       const submission = {
         team_id: teamId,
         title,
@@ -153,6 +159,23 @@ export const useSubmissions = () => {
     }
   }
 
+  // Admin function to enable/disable submissions
+  const setSubmissionsEnabled = async (enabled) => {
+    try {
+      const { error: settingError } = await supabase
+        .from('settings')
+        .upsert({ key: 'submissions_enabled', value: enabled })
+      
+      if (settingError) throw settingError
+      
+      submissionsEnabled.value = enabled
+      return true
+    } catch (err) {
+      console.error('Error updating submissions settings:', err)
+      return false
+    }
+  }
+
   // Check if voting is enabled
   const checkVotingStatus = async () => {
     try {
@@ -171,17 +194,51 @@ export const useSubmissions = () => {
     }
   }
 
+  // Check if submissions are enabled
+  const checkSubmissionsStatus = async () => {
+    try {
+      const { data, error: settingError } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'submissions_enabled')
+        .single()
+      
+      if (settingError && settingError.code !== 'PGRST116') {
+        // If error is not "row not found", throw it
+        throw settingError
+      }
+      
+      // If setting doesn't exist yet or is explicitly set to true, enable submissions
+      submissionsEnabled.value = data === null || data?.value === true
+    } catch (err) {
+      console.error('Error checking submissions status:', err)
+      submissionsEnabled.value = true // Default to enabled on error
+    }
+  }
+
+  // Initialize both statuses on load
+  const initStatuses = async () => {
+    await Promise.all([
+      checkVotingStatus(),
+      checkSubmissionsStatus()
+    ])
+  }
+
   return {
     submissions,
     categories,
     isLoading,
     error,
     votingEnabled,
+    submissionsEnabled,
     fetchSubmissions,
     submitIdea,
     voteForSubmission,
     checkUserVotes,
     setVotingEnabled,
-    checkVotingStatus
+    setSubmissionsEnabled,
+    checkVotingStatus,
+    checkSubmissionsStatus,
+    initStatuses
   }
 }
