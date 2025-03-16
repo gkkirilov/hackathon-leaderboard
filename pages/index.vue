@@ -1,6 +1,6 @@
 <script setup>
 import MatrixBackground from '~/components/stunning/MatrixBackground.vue'
-
+import SubmissionForm from '~/components/submissions/SubmissionForm.vue'
 const { fetchProfile, profile } = useUserProfile()
 const { teamColors, getTeamColor } = useTeams()
 const { 
@@ -73,7 +73,7 @@ onMounted(async () => {
     <main class="w-full px-4 sm:px-6 lg:px-8 py-8">
       <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
         <!-- Left sidebar: Submission Form and Admin Panel -->
-        <div class="space-y-6 xl:col-span-2">
+        <div class="space-y-6 xl:col-span-2 relative z-10">
           <SubmissionForm />
           <AdminPanel />
         </div>

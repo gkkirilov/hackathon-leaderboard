@@ -62,8 +62,8 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="bg-black border border-green-900/30 rounded-lg p-4 shadow-lg">
-    <div class="border-b border-green-900/30 pb-3 mb-4">
+  <div class="bg-black/60 backdrop-blur-lg border border-green-900/30 rounded-xl p-4 shadow-lg shadow-green-900/5">
+    <div class="border-b border-green-900/30 bg-gray-900/60 backdrop-blur-md pb-3 mb-4">
       <h2 class="text-lg font-bold text-green-400">SUBMIT PROJECT</h2>
     </div>
     
@@ -94,7 +94,7 @@ const handleSubmit = async () => {
     <div v-if="!showForm && !submissionSuccess" class="flex justify-center">
       <button 
         @click="toggleForm" 
-        class="bg-gradient-to-b from-green-600 to-green-800 text-white font-medium py-3 px-6 rounded-lg shadow-lg shadow-green-900/30 hover:from-green-500 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center w-full"
+        class="bg-gradient-to-b from-green-600 to-green-800 text-white font-medium py-3 px-6 rounded-lg shadow-lg shadow-green-900/50 hover:from-green-500 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center w-full"
         :disabled="!canSubmit"
       >
         <Icon name="lucide:plus-circle" class="mr-2 h-5 w-5" />
@@ -104,7 +104,7 @@ const handleSubmit = async () => {
     
     <!-- Disabled Button with Reason -->
     <div v-if="!showForm && !canSubmit && !submissionSuccess && submissionsEnabled" class="mt-3 text-center">
-      <p v-if="!profile?.team_id" class="text-amber-400 text-sm">
+      <p v-if="!profile?.team_id" class="text-amber-300 text-sm font-medium">
         <Icon name="lucide:info" class="inline-block mr-1 h-4 w-4" />
         Set up your profile first to enable submissions
       </p>
@@ -122,39 +122,39 @@ const handleSubmit = async () => {
       
       <!-- Title field -->
       <div>
-        <label for="title" class="block text-sm font-medium text-gray-400 mb-1">Project Title <span class="text-red-500">*</span></label>
+        <label for="title" class="block text-sm font-medium text-gray-300 mb-1">Project Title <span class="text-red-500">*</span></label>
         <input
           id="title"
           v-model="title"
           type="text"
           required
-          class="w-full bg-gray-900/40 border border-green-900/20 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          class="w-full bg-gray-900/70 border border-green-900/30 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
           placeholder="Enter a catchy title"
         />
       </div>
       
       <!-- Description field -->
       <div>
-        <label for="description" class="block text-sm font-medium text-gray-400 mb-1">Description <span class="text-red-500">*</span></label>
+        <label for="description" class="block text-sm font-medium text-gray-300 mb-1">Description <span class="text-red-500">*</span></label>
         <textarea
           id="description"
           v-model="description"
           required
           rows="4"
-          class="w-full bg-gray-900/40 border border-green-900/20 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          class="w-full bg-gray-900/70 border border-green-900/30 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
           placeholder="Describe your project idea in detail"
         ></textarea>
       </div>
       
       <!-- Tech Stack field -->
       <div>
-        <label for="tech-stack" class="block text-sm font-medium text-gray-400 mb-1">Technologies Used <span class="text-red-500">*</span></label>
+        <label for="tech-stack" class="block text-sm font-medium text-gray-300 mb-1">Technologies Used <span class="text-red-500">*</span></label>
         <input
           id="tech-stack"
           v-model="techStack"
           type="text"
           required
-          class="w-full bg-gray-900/40 border border-green-900/20 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+          class="w-full bg-gray-900/70 border border-green-900/30 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
           placeholder="e.g. Vue, Firebase, TailwindCSS"
         />
       </div>
