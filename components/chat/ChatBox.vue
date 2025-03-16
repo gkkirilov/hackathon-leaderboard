@@ -1,4 +1,6 @@
 <script setup>
+import AIControlPanel from '~/components/chat/AIControlPanel.vue'
+
 const { teamColors, getTeamColor } = useTeams()
 const { 
   messages, 
@@ -11,6 +13,7 @@ const {
   loadMoreMessages
 } = useSupabaseRealtime()
 const { profile, fetchProfile } = useUserProfile()
+const { checkForQuestions } = useLocalAI()
 const user = useSupabaseUser()
 
 const chatMessage = ref('')
@@ -33,11 +36,29 @@ onMounted(async () => {
   setTimeout(() => {
     isJoiningChat.value = false
   }, 1500)
+  
+  // Log message counts periodically for debugging
+  const logInterval = setInterval(() => {
+    if (messages.value) {
+      console.log('[ChatBox] Message counts - messages:', messages.value.length, 'localMessages:', localMessages.value.length)
+    }
+  }, 5000)
+  
+  // Clean up interval
+  onUnmounted(() => {
+    clearInterval(logInterval)
+  })
 })
 
 // Copy external messages to local state
 watch(messages, (newMessages) => {
+  console.log('[ChatBox] Messages updated, count:', newMessages.length)
   localMessages.value = [...newMessages]
+  
+  // Check for questions that the AI should answer
+  if (newMessages.length > 0) {
+    checkForQuestions(newMessages)
+  }
   
   nextTick(() => {
     if (chatContainer.value) {
@@ -105,7 +126,10 @@ const handleSendMessage = () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full rounded-xl overflow-hidden bg-gray-900/60 backdrop-blur-lg border border-green-900/20 shadow-xl shadow-green-900/10">
+  <div class="flex flex-col h-full rounded-xl overflow-hidden bg-gray-900/60 backdrop-blur-lg border border-green-900/20 shadow-xl shadow-green-900/10 relative">
+    <!-- AI Control Panel - placed in the relative container and absolutely positioned -->
+    <AIControlPanel />
+    
     <!-- Chat Header -->
     <div class="bg-black/50 backdrop-blur-md border-b border-green-900/30 p-3 flex items-center justify-between">
       <div class="flex items-center">

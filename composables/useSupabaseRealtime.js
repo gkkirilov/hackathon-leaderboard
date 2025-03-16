@@ -274,6 +274,7 @@ export const useSupabaseRealtime = () => {
     participantsCount,
     hasMoreMessages,
     currentPage,
-    loadMoreMessages
+    loadMoreMessages,
+    currentChannel
   }
 }
